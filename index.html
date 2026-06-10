@@ -83,12 +83,12 @@
             </h3>
             <div class="space-y-4">
                 <div class="relative w-full">
-                    <input type="tel" id="phone" placeholder="家長聯絡電話 (必填)" class="w-full pl-4 pr-[140px] py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
+                    <input type="tel" id="phone" oninput="updateSubmitBtn()" placeholder="家長聯絡電話 (必填)" class="w-full pl-4 pr-[140px] py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
                     <button type="button" onclick="triggerHistorySearch()" class="absolute right-2 top-1/2 -translate-y-1/2 bg-accentYellow text-textBrown px-3 py-1.5 rounded-lg text-[11px] font-bold shadow-sm active:scale-95 transition">
                         查詢/自動帶入
                     </button>
                 </div>
-                <input type="email" id="email" placeholder="家長電子信箱 (必填)" class="text-input">
+                <input type="email" id="email" oninput="updateSubmitBtn()" placeholder="家長電子信箱 (必填)" class="text-input">
                 <input type="text" id="lineName" placeholder="家長 LINE 名稱" class="text-input">
                 <input type="text" id="ownerName" placeholder="家長姓名" class="text-input">
             </div>
@@ -142,7 +142,6 @@
         </div>
     </div>
 
-    <!-- 隱藏表單用於 CORS 繞過 -->
     <iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
     <form id="hiddenForm" method="POST" target="hiddenFrame" style="display:none;">
         <input type="hidden" name="action" value="submitBooking">
@@ -150,6 +149,7 @@
     </form>
 
     <script>
+        // 🎯 這是您的後端網址
         const API_URL = "https://script.google.com/macros/s/AKfycbxiZiL9aFKRo04rzQbgjeexhVvzOAJ0K8cVRfq31dhfNqB2hKLN8O6ARfmA5z3LZY_a/exec";
 
         let allPhotos = []; 
@@ -159,7 +159,6 @@
         let currentTotal = 0;
         let currentCalDate = new Date(), calYear = currentCalDate.getFullYear(), calMonth = currentCalDate.getMonth();
         let petCount = 0;
-        let globalPackedPetPhotos = {};
 
         function callGasGet(action, params = {}) {
             let url = `${API_URL}?action=${action}`;
@@ -198,6 +197,14 @@
                 unlockPetEngineButton(); 
                 if(petCount === 0) appendNewPetFormCard();
             });
+        }
+
+        function unlockPetEngineButton() {
+            const btn = document.getElementById('addNewPetBtnEngine');
+            if(!btn) return;
+            btn.disabled = false;
+            btn.className = "w-full bg-white border-2 border-dashed border-[#bca085]/60 text-[#bca085] py-4 rounded-2xl text-xs font-bold shadow-sm active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer";
+            btn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i> 新增下一隻毛孩資料與預約`;
         }
 
         function renderGrid(filterCategory) {
@@ -260,6 +267,7 @@
             renderFrontCalendar(); 
             const container = document.getElementById('timeSlotContainer');
             if(container) container.innerHTML = '<div class="text-sm text-gray-400 text-center py-4">讀取中...</div>'; 
+            updateSubmitBtn();
             
             callGasGet('getDailySlots', { dateStr: dateStr })
                 .then(renderTimeSlots)
@@ -291,6 +299,7 @@
                 b.className = "time-btn py-2.5 border border-gray-200 bg-white rounded-xl text-textBrown font-bold text-[14px] shadow-sm";
             });
             btn.className = "time-btn py-2.5 border-2 border-accentYellow bg-accentYellow/20 rounded-xl text-textBrown font-bold text-[14px] shadow-sm";
+            updateSubmitBtn();
         }
 
         function triggerHistorySearch() {
@@ -307,6 +316,7 @@
                     } else {
                         Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶', timer:1500, showConfirmButton:false});
                     }
+                    updateSubmitBtn();
                 })
                 .catch(err => {
                     console.error("查詢失敗", err);
@@ -321,7 +331,7 @@
             if(!wrapper) return;
 
             const card = document.createElement('div');
-            card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4";
+            card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 shadow-sm";
             card.id = `petCardRoot_${id}`;
 
             let serviceOptions = `<option value="" disabled selected>請選擇服務項目</option>`;
@@ -341,8 +351,8 @@
             allServices.filter(s => s.category && s.category.includes('加購')).forEach(add => {
                 addonHtml += `
                 <label class="flex items-center gap-2 p-2 border border-gray-100 rounded-lg cursor-pointer bg-gray-50/50">
-                    <input type="checkbox" class="addon-checkbox" data-price="${add.price}" style="accent-color:#8A9A5B;">
-                    <span class="text-xs text-textBrown font-medium">${add.service} (+$${add.price})</span>
+                    <input type="checkbox" class="addon-checkbox" value="${add.service}" data-price="${add.price}" style="accent-color:#8A9A5B;">
+                    <span class="text-xs text-textBrown font-medium addon-text-label">${add.service} (+$${add.price})</span>
                 </label>`;
             });
 
@@ -354,7 +364,7 @@
                 ${id > 1 ? `<button type="button" onclick="document.getElementById('petCardRoot_${id}').remove(); recalculatePrice();" class="text-[10px] font-bold text-rose-500">移除</button>` : ''}
             </div>
             <div class="grid grid-cols-2 gap-2">
-                <div><input type="text" class="text-input p-name text-[12px]" placeholder="毛孩姓名 *"></div>
+                <div><input type="text" class="text-input p-name text-[12px]" oninput="updateSubmitBtn()" placeholder="毛孩姓名 *"></div>
                 <div><input type="text" class="text-input p-breed text-[12px]" placeholder="品種 *"></div>
             </div>
             <div>
@@ -368,10 +378,10 @@
             `;
             wrapper.appendChild(card);
             
-            // 監聽加購勾選
             card.querySelectorAll('.addon-checkbox').forEach(cb => {
                 cb.addEventListener('change', recalculatePrice);
             });
+            updateSubmitBtn();
         }
 
         function recalculatePrice() {
@@ -432,7 +442,6 @@
             }
         }
 
-        // 🌟 提交 - 使用隱藏表單（繞過 CORS）
         function processBooking() {
             const btn = document.getElementById('submitBtn'); 
             if(!btn) return;
@@ -458,17 +467,27 @@
                     
                     let addons = [];
                     cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => {
-                        addons.push(cb.parentElement.textContent.trim());
+                        addons.push(cb.value);
                     });
                     
+                    // 配合後端新版欄位，將資料整理為標準格式
                     petsArray.push({
                         name: pName,
                         breed: cardEl.querySelector('.p-breed').value.trim(),
+                        petSize: "小型犬", // 新版預設補全
+                        coatType: "短毛", // 新版預設補全
+                        personalityTag: "無",
+                        healthTag: "無",
                         mainService: mainService,
-                        addons: addons.join(', ')
+                        addons: addons.length > 0 ? addons.join(', ') : '無',
+                        petPhotoBase64: ""
                     });
                 }
             }
+
+            // 新版大腦所需的複合型主項目與加購項目
+            let mainServicesCombined = petsArray.map(p => p.name + "(" + p.mainService + ")");
+            let addonsCombined = petsArray.map(p => p.addons).filter(a => a !== '無');
 
             const formData = {
                 date: selectedDateStr, 
@@ -477,14 +496,17 @@
                 lineName: document.getElementById('lineName').value,
                 ownerName: document.getElementById('ownerName').value, 
                 email: document.getElementById('email').value.trim(),
-                petsJsonString: JSON.stringify(petsArray),
+                mainService: mainServicesCombined.join(', '), 
+                addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
                 price: currentTotal,
-                remark: '前台預約單',
+                remark: '前台輕量多寵預約單',
+                contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+                petsJsonString: JSON.stringify(petsArray),
                 petPhotoBase64: '',
                 signatureDataBase64: ''
             };
 
-            // 使用隱藏表單提交
+            // 使用隱藏表單打包送出 (完美沿用您的 iframe 繞過 CORS 架構)
             document.getElementById('formDataInput').value = JSON.stringify({
                 action: 'submitBooking',
                 data: formData
@@ -498,19 +520,19 @@
                     loaded = true;
                     Swal.fire({
                         title: '✅ 預約已送出！',
-                        text: '資料正在處理中...',
+                        text: '資料正在處理中，請稍候...',
                         icon: 'success',
                         confirmButtonColor: '#8A9A5B'
                     }).then(() => { 
-                        setTimeout(() => { window.location.reload(); }, 2000);
+                        setTimeout(() => { window.location.reload(); }, 1500);
                     });
                 }
             };
 
             frame.onload = checkFrame;
-            setTimeout(checkFrame, 3000);
+            setTimeout(checkFrame, 4000); // 降級容錯保護
 
-            // 提交隱藏表單
+            // 正式向隱藏表單發送請求
             document.getElementById('hiddenForm').submit();
         }
     </script>
