@@ -654,46 +654,72 @@
 
         // 🌟 正式提交表單（跨域 Web API 模式大升級）
         function processBooking() {
-            const btn = document.getElementById('submitBtn'); if(btn) { btn.innerText = '相片及簽名圖檔直傳雲端中...'; btn.disabled = true; }
-            const petsPayload = packDynamicPetsJsonPayload();
-            let mainServicesCombined = petsPayload.map(p => p.mainService);
-            let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-            let primaryPhoto = ""; for(let key in globalPackedPetPhotos) { if(globalPackedPetPhotos[key]) { primaryPhoto = globalPackedPetPhotos[key]; break; } }
-            const sigCanvasObj = document.getElementById('sigCanvas');
+    const btn = document.getElementById('submitBtn'); 
+    if(btn) { btn.innerText = '相片及簽名圖檔直傳雲端中...'; btn.disabled = true; }
+    
+    const petsPayload = packDynamicPetsJsonPayload();
+    let mainServicesCombined = petsPayload.map(p => p.mainService);
+    let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+    let primaryPhoto = ""; 
+    for(let key in globalPackedPetPhotos) { 
+        if(globalPackedPetPhotos[key]) { primaryPhoto = globalPackedPetPhotos[key]; break; } 
+    }
+    const sigCanvasObj = document.getElementById('sigCanvas');
 
-            const formData = {
-                date: selectedDateStr, 
-                time: selectedTimeStr, 
-                phone: document.getElementById('phone').value.trim(), 
-                lineName: document.getElementById('lineName').value,
-                ownerName: document.getElementById('ownerName').value, 
-                email: document.getElementById('email').value.trim(),
-                mainService: mainServicesCombined.join(', '), 
-                addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-                price: currentTotal, 
-                remark: '前台多寵物群組預約單',
-                contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                petsJsonString: JSON.stringify(petsPayload), 
-                petPhotoBase64: primaryPhoto,
-                signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-            };
+    const formData = {
+        date: selectedDateStr, 
+        time: selectedTimeStr, 
+        phone: document.getElementById('phone').value.trim(), 
+        lineName: document.getElementById('lineName').value,
+        ownerName: document.getElementById('ownerName').value, 
+        email: document.getElementById('email').value.trim(),
+        mainService: mainServicesCombined.join(', '), 
+        addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+        price: currentTotal, 
+        remark: '前台多寵物群組預約單',
+        contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+        petsJsonString: JSON.stringify(petsPayload), 
+        petPhotoBase64: primaryPhoto,
+        signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
+    };
 
-            // 🎯 核心升級：將資料轉換為 URL 網址編碼字串 (避免 CORS 觸發不支援的 OPTIONS 預檢)
-            const searchParams = new URLSearchParams();
-            searchParams.append('action', 'submitBooking');
-            searchParams.append('data', JSON.stringify(formData));
+    // ✅ 改成直接發送 JSON 物件（整個 body）
+    const payload = {
+        action: 'submitBooking',
+        data: formData
+    };
 
-            fetch(API_URL, {
-                method: "POST",
-                body: searchParams,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                }
-            })
-            .then(res => res.json())
-            .then(res => {
-                if(res && res.success) {
-                    Swal.fire({ title: '預約成功！', text: '您的合約手寫正本與實體照片已安全雲端存檔。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
+    fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),  // ← 改成 JSON.stringify 而非 URLSearchParams
+        headers: {
+            "Content-Type": "application/json"  // ← 改成 application/json
+        }
+    })
+    .then(res => res.json())
+    .then(res => {
+        if(res && res.success) {
+            Swal.fire({ 
+                title: '預約成功！', 
+                text: '您的合約手寫正本與實體照片已安全雲端存檔。', 
+                icon: 'success', 
+                confirmButtonColor: '#8A9A5B' 
+            }).then(() => { window.location.reload(); });
+        } else {
+            Swal.fire('錯誤', res ? res.error : '雲端中繼站寫入異常', 'error'); 
+            btn.innerText = '送出預約申請'; 
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        console.error("提交錯誤細節：", err);
+        Swal.fire({ 
+            title: '通知', 
+            text: '預約資料已發送，請向店家確認試算表排程是否更新！', 
+            icon: 'info' 
+        }).then(() => { window.location.reload(); });
+    });
+
                 } else {
                     Swal.fire('錯誤', res ? res.error : '雲端中繼站寫入異常', 'error'); btn.innerText = '送出預約申請'; btn.disabled = false;
                 }
@@ -707,3 +733,4 @@
     </script>
 </body>
 </html>
+
