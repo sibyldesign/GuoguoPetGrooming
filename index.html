@@ -652,86 +652,76 @@
             return packedPetsArray;
         }
 
-        // 🌟 正式提交表單（跨域 Web API 模式大升級）
+        // 🌟 正式提交表單（修正版）
         function processBooking() {
-    const btn = document.getElementById('submitBtn'); 
-    if(btn) { btn.innerText = '相片及簽名圖檔直傳雲端中...'; btn.disabled = true; }
-    
-    const petsPayload = packDynamicPetsJsonPayload();
-    let mainServicesCombined = petsPayload.map(p => p.mainService);
-    let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-    let primaryPhoto = ""; 
-    for(let key in globalPackedPetPhotos) { 
-        if(globalPackedPetPhotos[key]) { primaryPhoto = globalPackedPetPhotos[key]; break; } 
-    }
-    const sigCanvasObj = document.getElementById('sigCanvas');
+            const btn = document.getElementById('submitBtn'); 
+            if(btn) { btn.innerText = '相片及簽名圖檔直傳雲端中...'; btn.disabled = true; }
+            
+            const petsPayload = packDynamicPetsJsonPayload();
+            let mainServicesCombined = petsPayload.map(p => p.mainService);
+            let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+            let primaryPhoto = ""; 
+            for(let key in globalPackedPetPhotos) { 
+                if(globalPackedPetPhotos[key]) { primaryPhoto = globalPackedPetPhotos[key]; break; } 
+            }
+            const sigCanvasObj = document.getElementById('sigCanvas');
 
-    const formData = {
-        date: selectedDateStr, 
-        time: selectedTimeStr, 
-        phone: document.getElementById('phone').value.trim(), 
-        lineName: document.getElementById('lineName').value,
-        ownerName: document.getElementById('ownerName').value, 
-        email: document.getElementById('email').value.trim(),
-        mainService: mainServicesCombined.join(', '), 
-        addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-        price: currentTotal, 
-        remark: '前台多寵物群組預約單',
-        contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-        petsJsonString: JSON.stringify(petsPayload), 
-        petPhotoBase64: primaryPhoto,
-        signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-    };
+            const formData = {
+                date: selectedDateStr, 
+                time: selectedTimeStr, 
+                phone: document.getElementById('phone').value.trim(), 
+                lineName: document.getElementById('lineName').value,
+                ownerName: document.getElementById('ownerName').value, 
+                email: document.getElementById('email').value.trim(),
+                mainService: mainServicesCombined.join(', '), 
+                addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+                price: currentTotal, 
+                remark: '前台多寵物群組預約單',
+                contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+                petsJsonString: JSON.stringify(petsPayload), 
+                petPhotoBase64: primaryPhoto,
+                signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
+            };
 
-    // ✅ 關鍵修正：新增 action 欄位
-    const payload = {
-        action: 'submitBooking',      // ← 一定要有這行！
-        data: formData
-    };
+            const payload = {
+                action: 'submitBooking',
+                data: formData
+            };
 
-    console.log("📤 發送至 GAS 的數據:", JSON.stringify(payload).substring(0, 500));
+            console.log("📤 發送至 GAS 的數據:", JSON.stringify(payload).substring(0, 500));
 
-    fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload),
-        headers: {
-            "Content-Type": "application/json"
-        }
-    })
-    .then(res => res.json())
-    .then(res => {
-        console.log("✅ GAS 回應:", res);
-        if(res && res.success) {
-            Swal.fire({ 
-                title: '預約成功！', 
-                text: '您的合約手寫正本與實體照片已安全雲端存檔。\n單號：' + (res.orderId || ''),
-                icon: 'success', 
-                confirmButtonColor: '#8A9A5B' 
-            }).then(() => { window.location.reload(); });
-        } else {
-            Swal.fire('錯誤', res ? res.error : '雲端中繼站寫入異常', 'error'); 
-            btn.innerText = '送出預約申請'; 
-            btn.disabled = false;
-        }
-    })
-    .catch(err => {
-        console.error("❌ 提交錯誤:", err);
-        Swal.fire({ 
-            title: '通知', 
-            text: '預約資料發送失敗，請向店家確認！詳見瀏覽器主控台', 
-            icon: 'info' 
-        });
-        btn.innerText = '送出預約申請'; 
-        btn.disabled = false;
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(res => res.json())
+            .then(res => {
+                console.log("✅ GAS 回應:", res);
+                if(res && res.success) {
+                    Swal.fire({ 
+                        title: '預約成功！', 
+                        text: '您的合約手寫正本與實體照片已安全雲端存檔。\n單號：' + (res.orderId || ''),
+                        icon: 'success', 
+                        confirmButtonColor: '#8A9A5B' 
+                    }).then(() => { window.location.reload(); });
+                } else {
+                    Swal.fire('錯誤', res ? res.error : '雲端中繼站寫入異常', 'error'); 
+                    if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
                 }
             })
             .catch(err => {
-                console.error("提交錯誤細節：", err);
-                // 提示：若後端已完成 `doPost(e)` 的 URL 欄位解碼，此處將完美對接。
-                Swal.fire({ title: '通知', text: '預約資料已發送，請向店家確認試算表排程是否更新！', icon: 'info' }).then(() => { window.location.reload(); });
+                console.error("❌ 提交錯誤:", err);
+                Swal.fire({ 
+                    title: '通知', 
+                    text: '預約資料發送失敗，請檢查網路連線並重試', 
+                    icon: 'warning' 
+                });
+                if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
             });
         }
     </script>
 </body>
 </html>
-
