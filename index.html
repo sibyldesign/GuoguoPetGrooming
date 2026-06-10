@@ -74,6 +74,14 @@
 
     <div class="max-w-md mx-auto px-4 pb-8 space-y-5">
 
+        <!-- 🔧 診斷面板 -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+            <button onclick="testAPIConnection()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm w-full">
+                🔧 檢查 API 連接
+            </button>
+            <div id="testResult" class="text-xs mt-2 text-gray-600"></div>
+        </div>
+
         <div class="app-card p-5 bg-[#FCFAF5]">
             <h3 class="text-center font-extrabold text-[17px] text-textBrown mb-4 tracking-widest flex items-center justify-center gap-1"> ✨ 毛孩變美日記 ✨ </h3>
             <div class="flex justify-center flex-wrap gap-2 pb-2 mb-4">
@@ -237,7 +245,7 @@
     </div>
 
     <script>
-        // 🎯 GitHub 跨域部署對接 GAS 中控大腦 API 節點設定
+        // 🎯 API 設定
         const API_URL = "https://script.google.com/macros/s/AKfycbxiZiL9aFKRo04rzQbgjeexhVvzOAJ0K8cVRfq31dhfNqB2hKLN8O6ARfmA5z3LZY_a/exec";
 
         let allPhotos = []; let allServices = []; let selectedDateStr = ''; let selectedTimeStr = ''; let currentTotal = 0;
@@ -248,7 +256,62 @@
         let globalPackedPetPhotos = {};
         let cachedCustomerPetsData = []; 
 
-        // 封裝通用 Fetch GET 方法 (透過 URL 參數傳遞 action)
+        // 🔧 API 連接測試
+        function testAPIConnection() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.innerHTML = '🔍 測試中...';
+            
+            console.log("【API 連接測試】");
+            console.log("API_URL: " + API_URL);
+            
+            // 測試 GET
+            fetch(API_URL + "?action=getServiceSettings")
+                .then(res => res.json())
+                .then(data => {
+                    console.log("✅ GET 連接成功，收到 " + (Array.isArray(data) ? data.length : 0) + " 個服務");
+                    
+                    // 測試 POST
+                    var testPayload = {
+                        action: 'submitBooking',
+                        data: {
+                            phone: '0911111111',
+                            ownerName: '連接測試',
+                            email: 'test@test.com',
+                            date: '2026-06-11',
+                            time: '11:00',
+                            petsJsonString: '[]',
+                            price: 0,
+                            remark: '連接測試'
+                        }
+                    };
+                    
+                    return fetch(API_URL, {
+                        method: "POST",
+                        body: JSON.stringify(testPayload),
+                        headers: { "Content-Type": "application/json" }
+                    });
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("✅ POST 連接成功");
+                    console.log("回應:", data);
+                    
+                    if(data.success) {
+                        resultDiv.innerHTML = '✅ API 連接正常！訂單號：' + data.orderId;
+                        resultDiv.className = "text-xs mt-2 text-green-600 font-bold";
+                    } else {
+                        resultDiv.innerHTML = '⚠️ API 回應：' + (data.error || '未知錯誤');
+                        resultDiv.className = "text-xs mt-2 text-red-600 font-bold";
+                    }
+                })
+                .catch(err => {
+                    console.error("❌ 連接失敗:", err);
+                    resultDiv.innerHTML = '❌ 連接失敗：' + err.message;
+                    resultDiv.className = "text-xs mt-2 text-red-600 font-bold";
+                });
+        }
+
+        // 封裝通用 Fetch GET 方法
         function callGasGet(action, params = {}) {
             let url = `${API_URL}?action=${action}`;
             for (let key in params) {
@@ -339,7 +402,6 @@
                         if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
                             let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位歷史毛孩，請點選帶入 ---</option>`;
                             cachedCustomerPetsData.forEach((pet, index) => {
-                                // 🎯 已完全修復 index 後方帶有空格導致解析失敗的 Bug
                                 dropdownHtml += `<option value="${index}">歷史名單： ${pet.name} (${pet.breed})</option>`;
                             });
                             dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩</option>`;
@@ -652,7 +714,7 @@
             return packedPetsArray;
         }
 
-        // 🌟 正式提交表單（修正版）
+        // 🌟 正式提交表單
         function processBooking() {
             const btn = document.getElementById('submitBtn'); 
             if(btn) { btn.innerText = '相片及簽名圖檔直傳雲端中...'; btn.disabled = true; }
@@ -688,7 +750,7 @@
                 data: formData
             };
 
-            console.log("📤 發送至 GAS 的數據:", JSON.stringify(payload).substring(0, 500));
+            console.log("📤 發送至 GAS:", JSON.stringify(payload).substring(0, 200));
 
             fetch(API_URL, {
                 method: "POST",
