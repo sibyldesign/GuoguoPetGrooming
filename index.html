@@ -654,72 +654,72 @@
 
         // 🌟 正式提交表單（修正版）
         function processBooking() {
-            const btn = document.getElementById('submitBtn'); 
-            if(btn) { btn.innerText = '相片及簽名圖檔直傳雲端中...'; btn.disabled = true; }
-            
-            const petsPayload = packDynamicPetsJsonPayload();
-            let mainServicesCombined = petsPayload.map(p => p.mainService);
-            let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-            let primaryPhoto = ""; 
-            for(let key in globalPackedPetPhotos) { 
-                if(globalPackedPetPhotos[key]) { primaryPhoto = globalPackedPetPhotos[key]; break; } 
+    const btn = document.getElementById('submitBtn'); 
+    if(btn) { btn.innerText = '送出中...'; btn.disabled = true; }
+    
+    const petsPayload = packDynamicPetsJsonPayload();
+    const formData = {
+        date: selectedDateStr, 
+        time: selectedTimeStr, 
+        phone: document.getElementById('phone').value.trim(), 
+        lineName: document.getElementById('lineName').value,
+        ownerName: document.getElementById('ownerName').value, 
+        email: document.getElementById('email').value.trim(),
+        mainService: petsPayload.map(p => p.mainService).join(', '), 
+        addons: petsPayload.map(p => p.addons).filter(a => a !== '無').join(', ') || '無',
+        price: currentTotal, 
+        remark: '前台多寵物群組預約單',
+        contractTime: new Date().toLocaleString('zh-TW'),
+        petsJsonString: JSON.stringify(petsPayload), 
+        petPhotoBase64: (() => { for(let key in globalPackedPetPhotos) { if(globalPackedPetPhotos[key]) return globalPackedPetPhotos[key]; } return ""; })(),
+        signatureDataBase64: document.getElementById('sigCanvas') ? document.getElementById('sigCanvas').toDataURL() : ""
+    };
+
+    const payload = {
+        action: 'submitBooking',
+        data: formData
+    };
+
+    // 🎯 直接發送到 GAS（測試版本）
+    var formBody = [];
+    for (var key in payload) {
+        var encodedKey = encodeURIComponent(key);
+        var encodedValue = encodeURIComponent(JSON.stringify(payload[key]));
+        formBody.push(encodedKey + "=" + encodedValue);
+    }
+    formBody = formBody.join("&");
+
+    console.log("📤 以 URL 編碼格式發送...");
+
+    fetch('https://script.google.com/macros/s/AKfycbxiZiL9aFKRo04rzQbgjeexhVvzOAJ0K8cVRfq31dhfNqB2hKLN8O6ARfmA5z3LZY_a/exec', {
+        method: 'POST',
+        body: formBody,
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        }
+    })
+    .then(res => res.text())
+    .then(text => {
+        console.log("回應:", text);
+        try {
+            var res = JSON.parse(text);
+            if(res && res.success) {
+                Swal.fire({ title: '✅ 成功！', text: '訂單號：' + res.orderId, icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
+            } else {
+                Swal.fire('❌ 錯誤', res.error || '未知錯誤', 'error');
+                btn.innerText = '送出預約申請'; btn.disabled = false;
             }
-            const sigCanvasObj = document.getElementById('sigCanvas');
+        } catch(e) {
+            console.error("JSON 解析失敗:", e);
+            Swal.fire('❌ 伺服器回應異常', text, 'error');
+            btn.innerText = '送出預約申請'; btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        console.error("❌ 錯誤:", err);
+        Swal.fire('❌ 連接失敗', err.message, 'error');
+        btn.innerText = '送出預約申請'; btn.disabled = false;}
 
-            const formData = {
-                date: selectedDateStr, 
-                time: selectedTimeStr, 
-                phone: document.getElementById('phone').value.trim(), 
-                lineName: document.getElementById('lineName').value,
-                ownerName: document.getElementById('ownerName').value, 
-                email: document.getElementById('email').value.trim(),
-                mainService: mainServicesCombined.join(', '), 
-                addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-                price: currentTotal, 
-                remark: '前台多寵物群組預約單',
-                contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                petsJsonString: JSON.stringify(petsPayload), 
-                petPhotoBase64: primaryPhoto,
-                signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-            };
-
-            const payload = {
-                action: 'submitBooking',
-                data: formData
-            };
-
-            console.log("📤 發送至 GAS 的數據:", JSON.stringify(payload).substring(0, 500));
-
-            fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify(payload),
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            })
-            .then(res => res.json())
-            .then(res => {
-                console.log("✅ GAS 回應:", res);
-                if(res && res.success) {
-                    Swal.fire({ 
-                        title: '預約成功！', 
-                        text: '您的合約手寫正本與實體照片已安全雲端存檔。\n單號：' + (res.orderId || ''),
-                        icon: 'success', 
-                        confirmButtonColor: '#8A9A5B' 
-                    }).then(() => { window.location.reload(); });
-                } else {
-                    Swal.fire('錯誤', res ? res.error : '雲端中繼站寫入異常', 'error'); 
-                    if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
-                }
-            })
-            .catch(err => {
-                console.error("❌ 提交錯誤:", err);
-                Swal.fire({ 
-                    title: '通知', 
-                    text: '預約資料發送失敗，請檢查網路連線並重試', 
-                    icon: 'warning' 
-                });
-                if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
             });
         }
     </script>
