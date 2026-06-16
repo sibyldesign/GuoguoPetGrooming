@@ -53,6 +53,7 @@
         .text-input:focus { border-color: #8A9A5B; }
         .pill-btn { border: 1.5px solid #E8DFD5; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; background: white; color: #5C4D43; cursor: pointer; transition: all 0.2s; width: 100%; display: block; }
         .pill-btn.active { border-color: #8A9A5B; background-color: #F0F4E8; color: #8A9A5B; }
+        .addon-checkbox { width: 16px; height: 16px; cursor: pointer; }
     </style>
 </head>
 <body class="w-full overflow-x-hidden" onload="initPage()">
@@ -79,7 +80,7 @@
                 <button onclick="filterPhotos('口腔護理', this)" class="portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full border border-gray-200 text-textBrown text-[12px] font-bold bg-white"> 口腔護理 </button>
                 <button onclick="filterPhotos('造型美容', this)" class="portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full border border-gray-200 text-textBrown text-[12px] font-bold bg-white"> 造型美容 </button>
             </div>
-            <div class="grid grid-cols-2 gap-3 transition-all duration-500 overflow-hidden" id="portfolioGrid">
+            <div class="grid grid-cols-2 gap-3 overflow-hidden transition-all duration-500" id="portfolioGrid">
                 <div class="col-span-2 text-center text-xs text-gray-400 py-6"> 相簿載入中... </div>
             </div>
             <div class="text-center mt-4">
@@ -238,32 +239,42 @@
         </div>
     </div>
 
-    <div id="termsModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-md bg-black/50 transition-all duration-300">
-        <div class="bg-white w-full max-w-md h-[80vh] rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl border border-[#eae5df]/50 transition-transform duration-300 scale-95" id="modalContainer">
-            <div id="modalTitle" class="p-5 font-bold text-center border-b border-gray-100 text-[15px] text-[#211c1b]"> 合約條款細則 </div>
-            <div id="modalBody" class="p-6 flex-1 overflow-y-auto text-xs leading-relaxed text-gray-500 whitespace-pre-line bg-gray-50/50" onscroll="handleModalScrollEngine()"> 載入中... </div>
-            <div class="p-5 border-t border-gray-100 bg-white">
-                <button type="button" id="modalCloseBtn" disabled onclick="closeTermsModalWindow()" class="w-full bg-gray-200 text-gray-400 p-4 rounded-2xl text-xs font-bold transition-all duration-300 cursor-not-allowed tracking-widest uppercase"> 請向下滑動閱讀完整條款 </button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // 🌟 核心提醒：請把下方的網址換成您剛剛在「步驟2」中發布拿到的最新 /exec 網址！
+        // 🌟 核心開通關鍵：請把下方的網址換成您最新發布部署、執行身分為「我(妳自己)」的全新網址！
         const API_URL = "https://script.google.com/macros/s/AKfycbxiZiL9aFKRo04rzQbgjeexhVvzOAJ0K8cVRfq31dhfNqB2hKLN8O6ARfmA5z3LZY_a/exec";
 
-        let allPhotos = []; let allServices = []; let selectedDateStr = ''; let selectedTimeStr = ''; let currentTotal = 0;
+        let allPhotos = []; 
+        let allServices = []; 
+        let selectedDateStr = ''; 
+        let selectedTimeStr = ''; 
+        let currentTotal = 0;
         let currentCalDate = new Date(), calYear = currentCalDate.getFullYear(), calMonth = currentCalDate.getMonth();
         let mainRead = false, riskRead = false, currentTermType = 'main', isCheckedFinal = false, drawingState = false;
         let cachedContracts = { mainContract: "雲端服務契約加載中...", riskContract: "雲端高風險寵物服務告知加載中..." };
-        let petCount = 0; let globalPackedPetPhotos = {}; let cachedCustomerPetsData = [];
-        let isPortfolioExpanded = false; let currentSliderIndex = 0; let totalSliderImagesCount = 0; let touchStartX = 0; let touchEndX = 0;
+        let petCount = 0;
+        let globalPackedPetPhotos = {};
+        let cachedCustomerPetsData = [];
+        let isPortfolioExpanded = false;
+        let currentSliderIndex = 0; let totalSliderImagesCount = 0; let touchStartX = 0; let touchEndX = 0;
+
         const canvas = document.getElementById('sigCanvas'); const ctx = canvas ? canvas.getContext('2d') : null;
 
+        // 🌟 【核心修正】：將原本會被 CORS 防火牆擋下的 fetch 算力抽換，升級為利用 script 標籤動態借道穿透技術！
         function callGasGet(action, params = {}) {
-            let url = `${API_URL}?action=${action}`;
-            for (let key in params) { url += `&${key}=${encodeURIComponent(params[key])}`; }
-            return fetch(url).then(res => res.json());
+            return new Promise((resolve, reject) => {
+                let callbackName = 'gasCallback_' + Math.round(100000 * Math.random());
+                window[callbackName] = function(data) {
+                    resolve(data);
+                    document.getElementById(callbackName).remove();
+                    delete window[callbackName];
+                };
+                let url = `${API_URL}?action=${action}&callback=${callbackName}`;
+                for (let key in params) { url += `&${key}=${encodeURIComponent(params[key])}`; }
+                let script = document.createElement('script');
+                script.src = url; script.id = callbackName;
+                script.onerror = () => reject(new Error("試算表連線超時"));
+                document.body.appendChild(script);
+            });
         }
 
         function initPage() {
@@ -284,12 +295,22 @@
                 }).catch(err => console.error("合約載入失敗", err));
         }
 
-        function loadAnnouncement() { callGasGet('getAnnouncementData').then(text => { if(text) document.getElementById('announcement').innerHTML = text; }).catch(err => console.error("公告載入失敗", err)); }
-        function loadPortfolio() { callGasGet('getPortfolioData').then(data => { if(data) { allPhotos = data; renderGrid('全部'); } }).catch(err => console.error("相簿載入失敗", err)); }
+        function loadAnnouncement() {
+            callGasGet('getAnnouncementData').then(text => { 
+                if(text) document.getElementById('announcement').innerHTML = text; 
+            }).catch(err => console.error("公告載入失敗", err));
+        }
+
+        function loadPortfolio() {
+            callGasGet('getPortfolioData').then(data => { 
+                if(data) { allPhotos = data; renderGrid('全部'); } 
+            }).catch(err => console.error("相簿載入失敗", err));
+        }
 
         function loadServices() {
             callGasGet('getServiceSettings').then(data => {
-                allServices = Array.isArray(data) ? data : []; unlockPetEngineButton(); 
+                allServices = Array.isArray(data) ? data : []; 
+                unlockPetEngineButton(); 
                 if(petCount === 0) appendNewPetFormCard();
             }).catch(err => {
                 console.error("服務載入失敗", err);
@@ -299,11 +320,14 @@
         }
 
         function unlockPetEngineButton() {
-            const btn = document.getElementById('addNewPetBtnEngine'); if(!btn) return; btn.disabled = false;
-            btn.className = "w-full bg-white border-2 border-dashed border-[#bca085]/60 text-[#bca085] py-4 rounded-2xl text-xs font-bold shadow-sm active:scale-95 flex items-center justify-center gap-1 cursor-pointer";
+            const btn = document.getElementById('addNewPetBtnEngine');
+            if(!btn) return;
+            btn.disabled = false;
+            btn.className = "w-full bg-white border-2 border-dashed border-[#bca085]/60 text-[#bca085] py-4 rounded-2xl text-xs font-bold shadow-sm active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 cursor-pointer";
             btn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i> 新增下一隻毛孩資料與預約項目`;
         }
 
+        // 🌟 變美日記收合一行兩圖算力
         function renderGrid(filterCategory) {
             const grid = document.getElementById('portfolioGrid'); if(!grid) return; grid.innerHTML = '';
             const filtered = allPhotos.filter(item => filterCategory === '全部' || item.category === filterCategory);
@@ -327,6 +351,7 @@
         function openImageLightboxPortal(src) { const modal = document.getElementById('imageLightboxModal'); const img = document.getElementById('lightboxTargetImg'); if(!modal || !img) return; img.src = src; modal.classList.remove('hidden'); modal.classList.add('flex'); setTimeout(() => { modal.classList.add('opacity-100'); }, 50); }
         function closeImageLightboxPortal() { const modal = document.getElementById('imageLightboxModal'); if(!modal) return; modal.className = "fixed inset-0 bg-black/80 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 cursor-zoom-out opacity-0"; setTimeout(() => { modal.classList.remove('flex'); modal.classList.add('hidden'); }, 300); }
 
+        // 直式說明相片左右滾動
         function buildDynamicSliderModule(photoUrls) {
             const container = document.getElementById('sliderImagesContainer'); const dotsContainer = document.getElementById('sliderDotsContainer'); if(!container || !dotsContainer) return;
             container.innerHTML = ''; dotsContainer.innerHTML = ''; totalSliderImagesCount = photoUrls.length;
@@ -344,63 +369,103 @@
         }
 
         function filterPhotos(category, btn) {
-            document.querySelectorAll('.portfolio-btn').forEach(b => { b.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full border border-gray-200 text-textBrown text-[12px] font-bold bg-white"; });
-            btn.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full bg-textBrown text-white text-[12px] font-bold shadow-sm"; renderGrid(category);
+            document.querySelectorAll('.portfolio-btn').forEach(b => { 
+                b.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full border border-gray-200 text-textBrown text-[12px] font-bold bg-white"; 
+            });
+            btn.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full bg-textBrown text-white text-[12px] font-bold shadow-sm";
+            renderGrid(category);
         }
 
         function renderFrontCalendar() {
-            const monthTitle = document.getElementById('cal_year_month'); if(!monthTitle) return;
+            const monthTitle = document.getElementById('cal_year_month'); 
+            if(!monthTitle) return;
             monthTitle.innerText = `${calYear} 年 ${calMonth + 1} 月`;
-            const grid = document.getElementById('frontCalGrid'); if(!grid) return; grid.innerHTML = '';
-            const firstDay = new Date(calYear, calMonth, 1).getDay(); const numDays = new Date(calYear, calMonth + 1, 0).getDate();
-            let today = new Date(); today.setHours(0,0,0,0); let html = '';
+            const grid = document.getElementById('frontCalGrid'); 
+            if(!grid) return; 
+            grid.innerHTML = '';
+            const firstDay = new Date(calYear, calMonth, 1).getDay(); 
+            const numDays = new Date(calYear, calMonth + 1, 0).getDate();
+            let today = new Date(); 
+            today.setHours(0,0,0,0); 
+            let html = '';
             for(let i=0; i<firstDay; i++) html += `<div class="py-2"></div>`;
             for(let day=1; day<=numDays; day++) {
-                let cellDate = new Date(calYear, calMonth, day); let dateString = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                let cellDate = new Date(calYear, calMonth, day); 
+                let dateString = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
                 if(cellDate < today) html += `<div class="py-2 text-gray-300 font-normal cursor-not-allowed text-center">${day}</div>`;
                 else {
-                    if(dateString === selectedDateStr) html += `<div class="py-2 bg-calActive text-white rounded-lg shadow-sm cursor-pointer transform scale-105 transition text-center" onclick="selectDate('${dateString}')">${day}</div>`;
+                    if(dateString === selectedDateStr) html += `<div class="py-2 bg-[#8A9A5B] text-white rounded-lg shadow-sm cursor-pointer transform scale-105 transition text-center" onclick="selectDate('${dateString}')">${day}</div>`;
                     else html += `<div class="py-2 cursor-pointer hover:bg-gray-50 rounded-lg transition text-textBrown text-center" onclick="selectDate('${dateString}')">${day}</div>`;
                 }
             }
             grid.innerHTML = html;
         }
 
-        function changeFrontMonth(dir) { calMonth += dir; if(calMonth > 11) { calMonth = 0; calYear++; } if(calMonth < 0) { calMonth = 11; calYear--; } renderFrontCalendar(); }
-        
+        function changeFrontMonth(dir) { 
+            calMonth += dir; 
+            if(calMonth > 11) { calMonth = 0; calYear++; } 
+            if(calMonth < 0) { calMonth = 11; calYear--; } 
+            renderFrontCalendar(); 
+        }
+
         function selectDate(dateStr) { 
-            selectedDateStr = dateStr; selectedTimeStr = ''; renderFrontCalendar(); const container = document.getElementById('timeSlotContainer');
-            if(container) container.innerHTML = '<div class="text-sm text-gray-400 text-center py-4">時段精算中...</div>'; checkFormReady();
+            selectedDateStr = dateStr; 
+            selectedTimeStr = ''; 
+            renderFrontCalendar(); 
+            const container = document.getElementById('timeSlotContainer');
+            if(container) container.innerHTML = '<div class="text-sm text-gray-400 text-center py-4">讀取中...</div>'; 
+            checkFormReady();
             callGasGet('getDailySlots', { dateStr: dateStr }).then(renderTimeSlots).catch(err => { if(container) container.innerHTML = '<div class="text-gray-400 text-center py-4">時段讀取失敗</div>'; });
         }
+
         function renderTimeSlots(res) { 
-            const container = document.getElementById('timeSlotContainer'); if(!container) return; 
-            if(res && res.isClosed) { container.innerHTML = `<div class="text-red-500 font-bold text-center">${res.message}</div>`; return; } 
+            const container = document.getElementById('timeSlotContainer'); 
+            if(!container) return; 
+            if(res && res.isClosed) { 
+                container.innerHTML = `<div class="text-red-500 font-bold text-center">${res.message}</div>`; 
+                return; 
+            } 
             let html = '<div class="grid grid-cols-3 gap-3">'; 
             if(res && res.availableSlots) { 
-                res.availableSlots.forEach(time => { html += `<button onclick="selectTime('${time}', this)" class="time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50">${time}</button>`; });
+                res.availableSlots.forEach(time => { 
+                    html += `<button onclick="selectTime('${time}', this)" class="time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50">${time}</button>`; 
+                });
             } 
             container.innerHTML = html + '</div>'; 
         }
+
         function selectTime(time, btn) { 
-            selectedTimeStr = time; document.querySelectorAll('.time-btn').forEach(b => { b.className = "time-btn py-2.5 border border-gray-200 bg-white rounded-xl text-textBrown font-bold text-[14px] shadow-sm"; });
-            btn.className = "time-btn py-2.5 border-2 border-accentYellow bg-accentYellow/20 rounded-xl text-textBrown font-bold text-[14px] shadow-sm"; checkFormReady();
+            selectedTimeStr = time; 
+            document.querySelectorAll('.time-btn').forEach(b => { 
+                b.className = "time-btn py-2.5 border border-gray-200 bg-white rounded-xl text-textBrown font-bold text-[14px] shadow-sm";
+            });
+            btn.className = "time-btn py-2.5 border-2 border-accentYellow bg-accentYellow/20 rounded-xl text-textBrown font-bold text-[14px] shadow-sm";
+            checkFormReady();
         }
 
+        // 🌟 修正帶入功能：只精準帶入家長姓名、LINE名稱，其他選單全部交由前台家長自選
         function triggerHistorySearch() {
             const phone = document.getElementById('phone').value.trim(); if(phone.length < 8) return;
             callGasGet('checkCustomerHistory', { phone: phone }).then(res => {
                 if(res && res.found) {
-                    document.getElementById('ownerName').value = res.ownerName || ''; document.getElementById('lineName').value = res.lineName || ''; if(res.email) document.getElementById('email').value = res.email || '';
-                    cachedCustomerPetsData = res.petList || []; const petDropdown = document.getElementById('multiPetDropdown'); const petBlock = document.getElementById('multiPetSelectBlock');
+                    document.getElementById('ownerName').value = res.ownerName || '';
+                    document.getElementById('lineName').value = res.lineName || '';
+                    if(res.email) document.getElementById('email').value = res.email || '';
+                    
+                    cachedCustomerPetsData = res.petList || [];
+                    const petDropdown = document.getElementById('multiPetDropdown');
+                    const petBlock = document.getElementById('multiPetSelectBlock');
                     if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
                         let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位歷史毛孩，請點選帶入 ---</option>`;
                         cachedCustomerPetsData.forEach((pet, index) => { dropdownHtml += `<option value="${index}">歷史名單：${pet.name} (${pet.breed})</option>`; });
                         dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩</option>`;
                         petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
                     } else if(petBlock) { petBlock.classList.add('hidden'); }
-                    Swal.fire({toast:true, position:'top', icon:'success', title: '已自動帶入歷史資料', timer:1500, showConfirmButton:false});
-                } else { Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); }
+                    Swal.fire({toast:true, position:'top', icon:'success', title: '已自動帶入聯絡資料', timer:1500, showConfirmButton:false});
+                } else {
+                    Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false});
+                    const petBlock = document.getElementById('multiPetSelectBlock'); if(petBlock) petBlock.classList.add('hidden'); cachedCustomerPetsData = [];
+                }
                 checkFormReady();
             }).catch(err => console.error("查詢失敗", err));
         }
@@ -411,22 +476,26 @@
             const card1 = document.getElementById('petCardRoot_1');
             if(card1) {
                 card1.querySelector('.p-name').value = petSelected.name || ''; card1.querySelector('.p-breed').value = petSelected.breed || '';
-                card1.querySelector('.p-size').value = petSelected.size || '小型犬'; card1.querySelector('.p-coat').value = petSelected.coat || '短毛';
-                card1.querySelector('.p-pers').value = petSelected.pers || ''; card1.querySelector('.p-heal').value = petSelected.heal || '';
-                Swal.fire({toast:true, position:'top', icon:'success', title: `已灌入歷史毛孩 ${petSelected.name}`, timer:1500, showConfirmButton:false});
+                Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩姓名: ${petSelected.name}`, timer:1500, showConfirmButton:false});
                 checkFormReady();
             }
         }
 
         function appendNewPetFormCard() {
-            petCount++; const id = petCount; const wrapper = document.getElementById('dynamicPetContainer'); if(!wrapper) return;
-            const card = document.createElement('div'); card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 shadow-sm"; card.id = `petCardRoot_${id}`;
+            petCount++; const id = petCount;
+            const wrapper = document.getElementById('dynamicPetContainer'); if(!wrapper) return;
+            const card = document.createElement('div');
+            card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 shadow-sm";
+            card.id = `petCardRoot_${id}`;
 
-            let serviceOptions = `<option value="" disabled selected>請選擇服務項目</option>`; let categorySet = new Set();
+            let serviceOptions = `<option value="" disabled selected>請選擇服務項目</option>`;
+            let categorySet = new Set();
             allServices.forEach(s => { if(s.category && !s.category.includes('加購')) categorySet.add(s.category); });
             Array.from(categorySet).forEach(cat => {
                 serviceOptions += `<optgroup label="【 ${cat} 】">`;
-                allServices.filter(s => s.category === cat).forEach(item => { serviceOptions += `<option value="${item.service}" data-price="${item.price}">${item.service} ($${item.price})</option>`; });
+                allServices.filter(s => s.category === cat).forEach(item => {
+                    serviceOptions += `<option value="${item.service}" data-price="${item.price}">${item.service} ($${item.price})</option>`;
+                });
                 serviceOptions += `</optgroup>`;
             });
 
@@ -438,11 +507,11 @@
                     <span class="text-xs text-textBrown font-medium">${add.service} (+$${add.price})</span>
                 </label>`;
             });
-            if(addonHtml === "") addonHtml = `<div class="col-span-2 text-xs text-gray-400 italic">暫無加購項目</div>`;
+            if(addonHtml === "") addonHtml = `<div class="col-span-2 text-[11px] text-gray-400 italic">暫無加購項目</div>`;
 
             card.innerHTML = `
             <div class="flex justify-between items-center border-b pb-2">
-                <span class="bg-avocado text-white font-bold text-[10px] px-3 py-1 rounded-lg">施作毛孩 NO. ${id}</span>
+                <span class="bg-[#8A9A5B] text-white font-bold text-[10px] px-3 py-1 rounded-lg">毛孩 NO. ${id}</span>
                 ${id > 1 ? `<button type="button" onclick="document.getElementById('petCardRoot_${id}').remove(); recalculatePrice();" class="text-[10px] font-bold text-rose-500">移除</button>` : ''}
             </div>
             <div class="grid grid-cols-2 gap-2">
@@ -475,32 +544,6 @@
             recalculatePrice(); checkFormReady();
         }
 
-        function initDigitalSignatureCanvasEngine() {
-            const sigCanvasObj = document.getElementById('sigCanvas'); if(!sigCanvasObj) return; const ctxObj = sigCanvasObj.getContext('2d');
-            const rect = sigCanvasObj.parentNode.getBoundingClientRect(); sigCanvasObj.width = rect.width; sigCanvasObj.height = 180; ctxObj.strokeStyle = "#5c4d43"; ctxObj.lineWidth = 4; ctxObj.lineCap = "round"; ctxObj.lineJoin = "round";
-            sigCanvasObj.addEventListener('mousedown', () => { drawingState = true; document.getElementById('sigTextPlaceholder').classList.add('hidden'); ctxObj.beginPath(); }); sigCanvasObj.addEventListener('mousemove', (e) => drawStrokeAction(e, sigCanvasObj, ctxObj)); window.addEventListener('mouseup', () => drawingState = false);
-            sigCanvasObj.addEventListener('touchstart', (e) => { drawingState = true; document.getElementById('sigTextPlaceholder').classList.add('hidden'); ctxObj.beginPath(); e.preventDefault(); }, {passive:false}); sigCanvasObj.addEventListener('touchmove', (e) => drawStrokeAction(e, sigCanvasObj, ctxObj), {passive:false}); sigCanvasObj.addEventListener('touchend', () => drawingState = false);
-        }
-        function drawStrokeAction(e, cvs, cX) { if (!drawingState) return; const rect = cvs.getBoundingClientRect(); const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0); const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0); const x = clientX - rect.left; const y = clientY - rect.top; cX.lineTo(x, y); cX.stroke(); cX.beginPath(); cX.moveTo(x, y); if(e.touches) e.preventDefault(); checkFormReady(); }
-        function clearSignatureCanvasEngine() { const sigCanvasObj = document.getElementById('sigCanvas'); if(!sigCanvasObj) return; const cX = sigCanvasObj.getContext('2d'); cX.clearRect(0, 0, sigCanvasObj.width, sigCanvasObj.height); document.getElementById('sigTextPlaceholder').classList.remove('hidden'); checkFormReady(); }
-
-        function openTermsModalWindow(type) {
-            currentTermType = type; const modal = document.getElementById('termsModal'); const body = document.getElementById('modalBody'); const title = document.getElementById('modalTitle'); const btn = document.getElementById('modalCloseBtn');
-            if(!modal || !body || !btn) return; btn.disabled = true; btn.className = "w-full bg-gray-200 text-gray-400 p-4 rounded-2xl text-xs font-bold text-center cursor-not-allowed uppercase"; btn.innerText = "請向下滑動閱讀完整條款"; body.scrollTop = 0;
-            if (type === 'main') { title.innerText = "犬、貓美容安親契約條款"; body.innerText = cachedContracts.mainContract; } else { title.innerText = "高風險寵物服務告知"; body.innerText = cachedContracts.riskContract; } modal.classList.remove('hidden'); setTimeout(() => document.getElementById('modalContainer').classList.remove('scale-95'), 50); setTimeout(function() { if (body.scrollHeight <= body.clientHeight + 10) unlockTermsButton(btn); }, 350);
-        }
-        function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 30) unlockTermsButton(btn); }
-        function unlockTermsButton(btn) { btn.disabled = false; btn.innerText = "✓ 本人已詳細閱讀並完全同意以上條款"; btn.className = "w-full bg-[#5c4d43] text-white p-4 rounded-2xl text-xs font-bold shadow-lg text-center cursor-pointer"; }
-
-        function closeTermsModalWindow() {
-            document.getElementById('modalContainer').classList.add('scale-95'); setTimeout(() => document.getElementById('termsModal').classList.add('hidden'), 150);
-            if (currentTermType === 'main') { mainRead = true; const b = document.getElementById('badge_main'); if(b) { b.innerText = "已完成"; b.className = "text-[10px] bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold w-14 text-center transition-colors"; } }
-            else { riskRead = true; const b = document.getElementById('badge_risk'); if(b) { b.innerText = "已完成"; b.className = "text-[10px] bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold w-14 text-center transition-colors"; } }
-            if (mainRead && riskRead) { document.getElementById('signatureLockCover').classList.add('hidden'); document.getElementById('signatureUnlockBlock').classList.remove('hidden'); setTimeout(initDigitalSignatureCanvasEngine, 150); }
-            checkFormReady();
-        }
-        function toggleFinalCheckUIEngine() { isCheckedFinal = !isCheckedFinal; document.getElementById('finalCheck').checked = isCheckedFinal; document.getElementById('finalCheckCircle').className = isCheckedFinal ? "w-5 h-5 rounded-full bg-avocado flex items-center justify-center text-white text-xs flex-shrink-0 mt-0.5 border-none shadow-sm" : "w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center text-white text-xs flex-shrink-0 mt-0.5"; checkFormReady(); }
-
         function checkFormReady() {
             try {
                 const container = document.getElementById('dynamicPetContainer'); let allPetsFilled = container && container.children.length > 0;
@@ -512,64 +555,21 @@
                         if(!pName || !pBreed || !mainService || !hasImage) { allPetsFilled = false; break; }
                     }
                 } else { allPetsFilled = false; }
-                const phoneEl = document.getElementById('phone'); const hasPhone = phoneEl && phoneEl.value.trim().length > 0;
-                const emailInput = document.getElementById('email'); const emailValue = emailInput ? emailInput.value.trim() : '';
-                const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+                const hasPhone = document.getElementById('phone').value.trim().length > 0;
+                const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(document.getElementById('email').value.trim());
+                const hasDate = selectedDateStr !== ''; const hasTime = selectedTimeStr !== '';
                 let isSigned = false; const sigCanvasObj = document.getElementById('sigCanvas');
                 if (mainRead && riskRead && sigCanvasObj) {
-                    const blankCanvas = document.createElement('canvas'); blankCanvas.width = sigCanvasObj.width; blankCanvas.height = sigCanvasObj.height; isSigned = (sigCanvasObj.toDataURL() !== blankCanvas.toDataURL());
+                    const blankCanvas = document.createElement('canvas'); blankCanvas.width = sigCanvasObj.width; blankCanvas.height = sigCanvasObj.height;
+                    isSigned = (sigCanvasObj.toDataURL() !== blankCanvas.toDataURL());
                 }
                 const btn = document.getElementById('submitBtn'); if(!btn) return;
-                if (isCheckedFinal && isSigned && allPetsFilled && hasPhone && emailValid && selectedDateStr && selectedTimeStr) {
-                    btn.disabled = false; btn.className = "w-full bg-avocado text-white font-bold py-4 rounded-xl shadow-md text-sm cursor-pointer transform active:scale-95 transition-all duration-200 mb-6 font-black"; btn.innerText = `送出預約申請 (預估 $${currentTotal})`;
+                if (hasPhone && hasEmail && allPetsFilled && hasDate && hasTime && isCheckedFinal && isSigned) {
+                    btn.disabled = false; btn.className = "w-full bg-avocado text-white font-bold py-4 rounded-xl shadow-md text-sm cursor-pointer transform active:scale-95 transition-all duration-200 mb-6"; btn.innerText = `送出預約申請 (預估 $${currentTotal})`;
                 } else {
                     btn.disabled = true; btn.className = "w-full bg-[#FFEE99]/40 text-[#5C4D43] font-bold py-4 rounded-xl cursor-not-allowed mb-6 text-sm shadow-inner border border-[#E8DFD5]"; btn.innerText = '請完成必填選項、相片、條款與親筆簽名';
                 }
             } catch(e) { console.log(e); }
-        }
-
-        function packDynamicPetsJsonPayload() {
-            const container = document.getElementById('dynamicPetContainer'); const packedPetsArray = []; if(!container) return packedPetsArray;
-            for (let i = 0; i < container.children.length; i++) {
-                const cardEl = container.children[i]; const id = cardEl.id.split('_')[1];
-                let addonsArr = []; cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value));
-                packedPetsArray.push({
-                    name: cardEl.querySelector('.p-name').value.trim(), breed: cardEl.querySelector('.p-breed').value.trim(),
-                    petSize: cardEl.querySelector('.p-size').value, coatType: cardEl.querySelector('.p-coat').value,
-                    personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', healthTag: cardEl.querySelector('.p-heal').value.trim() || '無',
-                    mainService: cardEl.querySelector('.p-main-service').value, addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無',
-                    petPhotoBase64: globalPackedPetPhotos[id] || ""
-                });
-            }
-            return packedPetsArray;
-        }
-
-        function processBooking() {
-            const btn = document.getElementById('submitBtn'); if(!btn) return; btn.innerText = '相片及簽名傳輸中...'; btn.disabled = true;
-            const petsPayload = packDynamicPetsJsonPayload();
-            let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
-            let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-            let primaryPhoto = ""; for(let key in globalPackedPetPhotos) { if(globalPackedPetPhotos[key]) { primaryPhoto = globalPackedPetPhotos[key]; break; } }
-            const sigCanvasObj = document.getElementById('sigCanvas');
-
-            const formData = {
-                date: selectedDateStr, time: selectedTimeStr, phone: document.getElementById('phone').value.trim(), lineName: document.getElementById('lineName').value,
-                ownerName: document.getElementById('ownerName').value, email: document.getElementById('email').value.trim(),
-                mainService: mainServicesCombined.join(', '), addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-                price: currentTotal, remark: '前台多寵物數位合約單',
-                contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                petsJsonString: JSON.stringify(petsPayload), petPhotoBase64: primaryPhoto,
-                signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-            };
-
-            document.getElementById('formDataInput').value = JSON.stringify({ action: 'submitBooking', data: formData });
-            
-            Swal.fire({
-                title: '🎉 預約資料打包發送中！', text: '正在將多寵排程與時間戳記寫入試算表...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading()
-            });
-
-            document.getElementById('hiddenForm').submit();
-            setTimeout(() => { Swal.fire({ title: '✅ 預約申請送出完成！', text: '多寵物資料已回寫至總表 A~R 排列。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); }); }, 2800);
         }
     </script>
 </body>
