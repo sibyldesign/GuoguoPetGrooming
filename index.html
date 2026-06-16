@@ -66,6 +66,7 @@
 
     <div class="max-w-md mx-auto px-4 pb-8 space-y-5">
 
+        <!-- 變美日記 (預設僅呈現一行兩圖，點擊手動展開與收合) -->
         <div class="app-card p-5 bg-[#FCFAF5]">
             <h3 class="text-center font-extrabold text-[17px] text-textBrown mb-4 tracking-widest flex items-center justify-center gap-1"> ✨ 毛孩變美日記 ✨ </h3>
             <div class="flex justify-center flex-wrap gap-2 pb-2 mb-4">
@@ -74,7 +75,7 @@
                 <button onclick="filterPhotos('口腔護理', this)" class="portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full border border-gray-200 text-textBrown text-[12px] font-bold bg-white"> 口腔護理 </button>
                 <button onclick="filterPhotos('造型美容', this)" class="portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full border border-gray-200 text-textBrown text-[12px] font-bold bg-white"> 造型美容 </button>
             </div>
-            <div class="grid grid-cols-2 gap-3 overflow-hidden transition-all duration-500" id="portfolioGrid">
+            <div class="grid grid-cols-2 gap-3 transition-all duration-500 overflow-hidden" id="portfolioGrid">
                 <div class="col-span-2 text-center text-xs text-gray-400 py-6"> 相簿載入中... </div>
             </div>
             <div class="text-center mt-4">
@@ -84,6 +85,7 @@
             </div>
         </div>
 
+        <!-- 直式說明圖片左右輪播展示模組 ($960 * 1706 鎖死比例 + 漸層磨砂自適應背景底) -->
         <div class="app-card p-4 bg-white relative">
             <div class="relative overflow-hidden rounded-xl w-full aspect-[960/1706] bg-gradient-to-b from-[#7c6a61]/10 to-[#5c4d43]/20 shadow-inner" id="sliderTrackWindow">
                 <div class="flex transition-transform duration-500 h-full w-full" id="sliderImagesContainer">
@@ -95,6 +97,7 @@
             <div class="flex justify-center gap-2 mt-3" id="sliderDotsContainer"></div>
         </div>
 
+        <!-- 家長聯絡資訊 -->
         <div class="app-card p-5">
             <div class="absolute top-0 left-0 w-2 h-full bg-accentYellow"></div>
             <h3 class="font-bold text-textBrown mb-4 flex items-center gap-2">
@@ -118,16 +121,18 @@
             </div>
         </div>
 
+        <!-- 毛孩詳細履歷庫 -->
         <div class="bg-white border border-[#eae5df] rounded-[2rem] p-6 shadow-sm space-y-4">
             <div class="text-[11px] font-bold text-[#bca085] mb-2 tracking-widest uppercase">
                 <i class="fa-solid fa-paw mr-1 text-gray-400"></i> Pet Profile / 毛孩詳細履歷庫
             </div>
             <div id="dynamicPetContainer" class="space-y-6"></div>
-            <button type="button" id="addNewPetBtnEngine" disabled onclick="appendNewPetFormCard()" class="w-full bg-white border-2 border-dashed border-[#bca085]/40 text-[#bca085] py-4 rounded-2xl text-xs font-bold shadow-sm flex items-center justify-center gap-1 cursor-pointer">
+            <button type="button" id="addNewPetBtnEngine" disabled onclick="appendNewPetFormCard()" class="w-full bg-white border-2 border-dashed border-[#bca085]/60 text-[#bca085] py-4 rounded-2xl text-xs font-bold shadow-sm active:scale-95 flex items-center justify-center gap-1 cursor-pointer">
                 <i class="fa-solid fa-plus text-[10px]"></i> 新增下一隻毛孩資料與預約項目
             </button>
         </div>
 
+        <!-- 選擇預約日期 -->
         <div class="app-card p-5" id="dateTimeCard">
             <div class="absolute top-0 left-0 w-2 h-full bg-accentYellow"></div>
             <h3 class="font-bold text-textBrown mb-4 flex items-center gap-2"><i class="fas fa-calendar-alt text-accentYellow drop-shadow-sm"></i> 選擇預約日期</h3>
@@ -148,6 +153,7 @@
             </div>
         </div>
 
+        <!-- 法律條款與數位簽署 -->
         <div class="bg-white border border-[#eae5df] rounded-[2rem] p-6 shadow-sm space-y-4">
             <div class="text-[11px] font-bold text-[#bca085] mb-2.5 block tracking-widest uppercase">
                 <i class="fa-solid fa-file-signature text-gray-400 mr-1"></i> Verification / 法律條款與數位簽署
@@ -189,7 +195,7 @@
                 <div class="border border-[#eae5df] rounded-2xl p-5 space-y-3 bg-white">
                     <div class="flex justify-between items-center">
                         <label class="text-[11px] font-bold text-gray-400 tracking-wider uppercase"> Digital Signature / 家長親筆手寫簽名正本 * </label>
-                        <button type="button" onclick="clearSignatureCanvasEngine()" class="text-[10px] text-rose-500 font-bold flex items-center gap-1 hover:underline"> 清除重簽 </button>
+                        <button type="button" onclick="clearSignatureCanvasEngine()" class="text-[10px] text-rose-500 font-bold flex items-center gap-1 hover:underline"><i class="fa-regular fa-trash-can"></i> 清除重簽 </button>
                     </div>
                     <div class="border border-gray-200 rounded-2xl overflow-hidden bg-white relative shadow-inner h-[180px]">
                         <canvas id="sigCanvas" class="w-full h-full cursor-crosshair"></canvas>
@@ -202,6 +208,7 @@
             </div>
         </div>
 
+        <!-- 頁尾社群營業時間 -->
         <div class="flex justify-center gap-5 mb-4">
             <a href="https://lin.ee/6A3s756D" target="_blank" class="w-[52px] h-[52px] bg-white rounded-full flex items-center justify-center border border-[#E8DFD5] shadow-sm active:scale-95 transition text-avocado text-[22px]"><i class="fab fa-line"></i></a>
             <a href="https://www.instagram.com/ninigogo2020" target="_blank" class="w-[52px] h-[52px] bg-white rounded-full flex items-center justify-center border border-[#E8DFD5] shadow-sm active:scale-95 transition text-avocado text-[22px]"><i class="fab fa-instagram"></i></a>
@@ -212,27 +219,31 @@
             <i class="far fa-clock mr-1"></i> 營業時間 9:00-18:30
         </div>
 
+        <!-- 🌟 【按鈕配色大優化】：未填齊時，完美轉為溫和清晰的「淡黃色背景 (bg-[#FFEE99]/40) 搭配深棕色文字 (text-[#5C4D43])」 -->
         <button id="submitBtn" onclick="processBooking()" disabled class="w-full bg-[#FFEE99]/40 text-[#5C4D43] font-bold py-4 rounded-xl transition duration-300 cursor-not-allowed mb-6 text-sm shadow-inner border border-[#E8DFD5]">
             請完成必填選項、相片、條款與親筆簽名
         </button>
 
         <div class="text-center mt-2 mb-4 text-sibylLight text-[11px] tracking-widest uppercase">
-            Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline"> Sibyl | 數位管家 </a>
+            Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
         </div>
     </div>
 
+    <!-- 原生轉向隱藏沙盒 -->
     <iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
     <form id="hiddenForm" method="POST" target="hiddenFrame" style="display:none;">
         <input type="hidden" name="action" value="submitBooking">
         <input type="hidden" name="data" id="formDataInput">
     </form>
 
+    <!-- 滿版大圖查看燈箱視窗 -->
     <div id="imageLightboxModal" onclick="closeImageLightboxPortal()" class="fixed inset-0 bg-black/80 z-[10000] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 cursor-zoom-out opacity-0">
         <div class="relative max-w-full max-h-full">
             <img id="lightboxTargetImg" src="" class="max-w-md max-h-[85vh] object-contain rounded-2xl border-4 border-white/10 shadow-2xl">
         </div>
     </div>
 
+    <!-- 條款 Modal 彈窗 -->
     <div id="termsModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-md bg-black/50 transition-all duration-300">
         <div class="bg-white w-full max-w-md h-[80vh] rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl border border-[#eae5df]/50 transition-transform duration-300 scale-95" id="modalContainer">
             <div id="modalTitle" class="p-5 font-bold text-center border-b border-gray-100 text-[15px] text-[#211c1b]"> 合約條款細則 </div>
@@ -244,7 +255,7 @@
     </div>
 
     <script>
-        // 🌟 請換成您最新發布、執行身分為「我」的 exec 網址！
+        // 🌟 核心部署網址（已對接妳新發布的 exec 連結）
         const API_URL = "https://script.google.com/macros/s/AKfycbxiZiL9aFKRo04rzQbgjeexhVvzOAJ0K8cVRfq31dhfNqB2hKLN8O6ARfmA5z3LZY_a/exec";
 
         let allPhotos = []; let allServices = []; let selectedDateStr = ''; let selectedTimeStr = ''; let currentTotal = 0;
@@ -255,7 +266,7 @@
         let isPortfolioExpanded = false; let currentSliderIndex = 0; let totalSliderImagesCount = 0; let touchStartX = 0; let touchEndX = 0;
         const canvas = document.getElementById('sigCanvas'); const ctx = canvas ? canvas.getContext('2d') : null;
 
-        // 🌟 動態 JSONP 穿透核心大腦（完美契合 doGet 通道，徹底粉碎 GitHub 跨域空白問題！）
+        // 動態 JSONP 穿透核心通道
         function callGasGet(action, params = {}) {
             return new Promise((resolve, reject) => {
                 let callbackName = 'gasCallback_' + Math.round(100000 * Math.random());
@@ -310,14 +321,15 @@
             btn.innerHTML = `<i class="fa-solid fa-plus text-[10px]"></i> 新增下一隻毛孩資料與預約項目`;
         }
 
-        // 作品集一行兩圖自適應控制
+        // 🌟 修正：作品集一行兩圖自適應控制顯隱
         function renderGrid(filterCategory) {
             const grid = document.getElementById('portfolioGrid'); if(!grid) return; grid.innerHTML = '';
             const filtered = allPhotos.filter(item => filterCategory === '全部' || item.category === filterCategory);
             if (filtered.length === 0) { grid.innerHTML = '<div class="col-span-2 text-center text-xs text-gray-400 py-6">此分類尚無照片</div>'; return; }
             filtered.forEach((item, idx) => { 
+                let displayStyle = (!isPortfolioExpanded && idx >= 2) ? 'none' : 'block';
                 grid.innerHTML += `
-                <div class="portfolio-item-card bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm flex flex-col transform transition hover:scale-102 cursor-zoom-in ${(!isPortfolioExpanded && idx >= 2) ? 'hidden' : ''}" onclick="openImageLightboxPortal('${item.imgUrl}')">
+                <div class="portfolio-item-card bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm flex flex-col transform transition hover:scale-102 cursor-zoom-in" style="display: ${displayStyle}" onclick="openImageLightboxPortal('${item.imgUrl}')">
                     <div class="w-full h-32 bg-gray-100 bg-cover bg-center" style="background-image: url('${item.imgUrl}')"></div>
                     <div class="p-2 h-12 flex items-center justify-center text-center text-[12px] font-bold text-textBrown bg-white leading-snug">${item.title}</div>
                 </div>`; 
@@ -326,15 +338,20 @@
         }
 
         function togglePortfolioExpandState() {
-            isPortfolioExpanded = !isPortfolioExpanded; const items = document.querySelectorAll('.portfolio-item-card'); const btn = document.getElementById('togglePortfolioBtn');
-            if(isPortfolioExpanded) { items.forEach(el => el.classList.remove('hidden')); btn.innerHTML = `收合作品集 <i class="fas fa-chevron-up ml-1"></i>`; } 
-            else { items.forEach((el, idx) => { if(idx >= 2) el.classList.add('hidden'); }); btn.innerHTML = `查看更多作品集 <i class="fas fa-chevron-down ml-1"></i>`; }
+            isPortfolioExpanded = !isPortfolioExpanded;
+            const btn = document.getElementById('togglePortfolioBtn');
+            // 💡 直接調用刷新機制重繪 DOM，徹底防止 Tailwind 機制失效！
+            renderGrid(document.querySelector('.portfolio-btn.bg-textBrown').innerText);
+            if(isPortfolioExpanded) {
+                btn.innerHTML = `收合作品集 <i class="fas fa-chevron-up ml-1"></i>`;
+            } else {
+                btn.innerHTML = `查看更多作品集 <i class="fas fa-chevron-down ml-1"></i>`;
+            }
         }
 
         function openImageLightboxPortal(src) { const modal = document.getElementById('imageLightboxModal'); const img = document.getElementById('lightboxTargetImg'); if(!modal || !img) return; img.src = src; modal.classList.remove('hidden'); modal.classList.add('flex'); setTimeout(() => { modal.classList.add('opacity-100'); }, 50); }
         function closeImageLightboxPortal() { const modal = document.getElementById('imageLightboxModal'); if(!modal) return; modal.className = "fixed inset-0 bg-black/80 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 cursor-zoom-out opacity-0"; setTimeout(() => { modal.classList.remove('flex'); modal.classList.add('hidden'); }, 300); }
 
-        // 🌟 說明相片左右滑動引擎（自適應 $960 \times 1706$ 漸層填補比例）
         function buildDynamicSliderModule(photoUrls) {
             const container = document.getElementById('sliderImagesContainer'); const dotsContainer = document.getElementById('sliderDotsContainer'); if(!container || !dotsContainer) return;
             container.innerHTML = ''; dotsContainer.innerHTML = ''; totalSliderImagesCount = photoUrls.length;
@@ -349,11 +366,6 @@
             currentSliderIndex += direction; if(currentSliderIndex >= totalSliderImagesCount) currentSliderIndex = 0; if(currentSliderIndex < 0) currentSliderIndex = totalSliderImagesCount - 1;
             const container = document.getElementById('sliderImagesContainer'); if(container) container.style.transform = `translateX(-${currentSliderIndex * 100}%)`;
             for(let i=0; i<totalSliderImagesCount; i++) { const dot = document.getElementById(`sliderDot_${i}`); if(dot) dot.className = `w-2.5 h-2.5 rounded-full bg-gray-300 transition-colors duration-300 ${i===currentSliderIndex?'!bg-avocado':''}`; }
-        }
-
-        function filterPhotos(category, btn) {
-            document.querySelectorAll('.portfolio-btn').forEach(b => { b.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full border border-gray-200 text-textBrown text-[12px] font-bold bg-white"; });
-            btn.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full bg-textBrown text-white text-[12px] font-bold shadow-sm"; renderGrid(category);
         }
 
         function renderFrontCalendar() {
@@ -405,22 +417,26 @@
                         petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
                     } else if(petBlock) { petBlock.classList.add('hidden'); }
                     Swal.fire({toast:true, position:'top', icon:'success', title: '已自動帶入聯絡名冊', timer:1500, showConfirmButton:false});
-                } else { Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); if(document.getElementById('multiPetSelectBlock')) document.getElementById('multiPetSelectBlock').classList.add('hidden'); }
+                } else { Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); if(document.getElementById('multiPetSelectBlock')) document.getElementById('multiPetSelectBlock').classList.add('hidden'); cachedCustomerPetsData = []; }
                 checkFormReady();
             }).catch(err => console.error("查詢失敗", err));
         }
 
+        // 🌟 修正帶入功能：當選擇歷史毛孩時，直接將全部已知的基本資料全量精準灌入 NO.1 卡片中
         function switchSelectedPetInfo(indexVal) {
             if(indexVal === "" || indexVal === "_CHOOSE_") return;
             const petSelectedName = cachedCustomerPetsData[parseInt(indexVal)]; if(!petSelectedName) return;
             const card1 = document.getElementById('petCardRoot_1');
-            if(card1) { card1.querySelector('.p-name').value = petSelectedName || ''; Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩姓名: ${petSelectedName}`, timer:1500, showConfirmButton:false}); checkFormReady(); }
+            if(card1) { 
+                card1.querySelector('.p-name').value = petSelectedName || ''; 
+                Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩姓名: ${petSelectedName}`, timer:1500, showConfirmButton:false}); 
+                checkFormReady(); 
+            }
         }
 
-        // 🌟 【全量補齊】：多寵物明細卡片動態追加控制引擎 (徹底破除未定義當機！)
         function appendNewPetFormCard() {
             petCount++; const id = petCount; const wrapper = document.getElementById('dynamicPetContainer'); if(!wrapper) return;
-            const card = document.createElement('div'); card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 relative shadow-sm animate-fade-in"; card.id = `petCardRoot_${id}`;
+            const card = document.createElement('div'); card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 shadow-sm animate-fade-in"; card.id = `petCardRoot_${id}`;
 
             let serviceOptions = `<option value="" disabled selected>請選擇服務項目</option>`; let categorySet = new Set();
             allServices.forEach(s => { if(s.category && !s.category.includes('加購')) categorySet.add(s.category); });
@@ -453,43 +469,33 @@
             <div><label class="text-[11px] font-bold text-textBrown mb-1 block">主服務項目 *</label><select class="text-input p-main-service text-gray-600 font-bold" onchange="recalculatePrice()" required>${serviceOptions}</select></div>
             <div><label class="text-[11px] font-bold text-textBrown mb-1.5 block">專屬加購護理 (可複選)</label><div class="grid grid-cols-2 gap-2">${addonHtml}</div></div>
             <div class="border border-gray-100 rounded-xl p-3 bg-gray-50/40 space-y-2"><label class="text-[10px] font-bold text-gray-400 block"><i class="fas fa-camera"></i> 上傳寵物真實相片 *</label><input type="file" accept="image/*" onchange="previewAndPackIndividualPetImage(this, ${id})" class="text-xs text-gray-500 cursor-pointer"><div id="photoPreviewContainer_${id}" class="hidden w-16 h-16 rounded-lg overflow-hidden border bg-white shadow-inner"><img id="photoPreviewImg_${id}" class="w-full h-full object-cover"></div></div>`;
-            
-            wrapper.appendChild(card); 
-            card.querySelectorAll('.addon-checkbox').forEach(cb => { cb.addEventListener('change', recalculatePrice); }); 
-            recalculatePrice(); checkFormReady();
+            wrapper.appendChild(card); card.querySelectorAll('.addon-checkbox').forEach(cb => { cb.addEventListener('change', recalculatePrice); }); checkFormReady();
         }
 
-        function previewAndPackIndividualPetImage(inputEl, id) {
-            const file = inputEl.files[0]; if (!file) return;
-            const container = document.getElementById(`photoPreviewContainer_${id}`); const previewImg = document.getElementById(`photoPreviewImg_${id}`);
-            const reader = new FileReader();
-            reader.onload = function(e) { globalPackedPetPhotos[id] = e.target.result; if(previewImg) previewImg.src = e.target.result; if(container) container.classList.remove('hidden'); checkFormReady(); };
-            reader.readAsDataURL(file);
-        }
+        // 🌟 【全量實裝】：解鎖電子簽名板與畫布事件監聽（完美根除無法簽名的致命死結！）
+        function initDigitalSignatureCanvasEngine() {
+            const sigCanvasObj = document.getElementById('sigCanvas'); if(!sigCanvasObj) return; 
+            const ctxObj = sigCanvasObj.getContext('2d');
+            const rect = sigCanvasObj.parentNode.getBoundingClientRect(); sigCanvasObj.width = rect.width; sigCanvasObj.height = 180; 
+            ctxObj.strokeStyle = "#5c4d43"; ctxObj.lineWidth = 4; ctxObj.lineCap = "round"; ctxObj.lineJoin = "round";
 
-        function recalculatePrice() {
-            let total = 0; const container = document.getElementById('dynamicPetContainer'); if (!container) return;
-            for (let i = 0; i < container.children.length; i++) {
-                const cardEl = container.children[i]; const mainSelect = cardEl.querySelector('.p-main-service');
-                if (mainSelect && mainSelect.value !== "") {
-                    const selectedOption = mainSelect.options[mainSelect.selectedIndex];
-                    if (selectedOption) total += parseFloat(selectedOption.getAttribute('data-price')) || 0;
-                }
-                cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => { total += parseFloat(cb.getAttribute('data-price')) || 0; });
-            }
-            currentTotal = total; checkFormReady();
-        }
+            sigCanvasObj.addEventListener('mousedown', () => { drawingState = true; document.getElementById('sigTextPlaceholder').classList.add('hidden'); ctxObj.beginPath(); }); 
+            sigCanvasObj.addEventListener('mousemove', (e) => drawStrokeAction(e, sigCanvasObj, ctxObj)); 
+            window.addEventListener('mouseup', () => drawingState = false);
 
-        // 🌟 【全量補齊】：法律合約 Modal 點開與滑動解鎖核心控制引擎
+            sigCanvasObj.addEventListener('touchstart', (e) => { drawingState = true; document.getElementById('sigTextPlaceholder').classList.add('hidden'); ctxObj.beginPath(); e.preventDefault(); }, {passive:false}); 
+            sigCanvasObj.addEventListener('touchmove', (e) => drawStrokeAction(e, sigCanvasObj, ctxObj), {passive:false}); 
+            sigCanvasObj.addEventListener('touchend', () => drawingState = false);
+        }
+        function drawStrokeAction(e, cvs, cX) { if (!drawingState) return; const rect = cvs.getBoundingClientRect(); const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0); const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0); const x = clientX - rect.left; const y = clientY - rect.top; cX.lineTo(x, y); cX.stroke(); cX.beginPath(); cX.moveTo(x, y); if(e.touches) e.preventDefault(); checkFormReady(); }
+        function clearSignatureCanvasEngine() { const sigCanvasObj = document.getElementById('sigCanvas'); if(!sigCanvasObj) return; const cX = sigCanvasObj.getContext('2d'); cX.clearRect(0, 0, sigCanvasObj.width, sigCanvasObj.height); document.getElementById('sigTextPlaceholder').classList.remove('hidden'); checkFormReady(); }
+
         function openTermsModalWindow(type) {
             currentTermType = type; const modal = document.getElementById('termsModal'); const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn');
             if(!modal || !body || !btn) return; btn.disabled = true; btn.className = "w-full bg-gray-200 text-gray-400 p-4 rounded-2xl text-xs font-bold text-center cursor-not-allowed uppercase"; btn.innerText = "請向下滑動閱讀完整條款"; body.scrollTop = 0;
-            if (type === 'main') { document.getElementById('modalTitle').innerText = "犬、貓美容安親契約條款"; body.innerText = cachedContracts.mainContract; } 
-            else { document.getElementById('modalTitle').innerText = "高風險寵物服務告知"; body.innerText = cachedContracts.riskContract; } 
-            modal.classList.remove('hidden'); setTimeout(() => document.getElementById('modalContainer').classList.remove('scale-95'), 50); 
-            setTimeout(function() { if (body.scrollHeight <= body.clientHeight + 15) unlockTermsButton(btn); }, 350);
+            if (type === 'main') { document.getElementById('modalTitle').innerText = "犬、貓美容安親契約條款"; body.innerText = cachedContracts.mainContract; } else { document.getElementById('modalTitle').innerText = "高風險寵物服務告知"; body.innerText = cachedContracts.riskContract; } modal.classList.remove('hidden'); setTimeout(() => document.getElementById('modalContainer').classList.remove('scale-95'), 50); setTimeout(function() { if (body.scrollHeight <= body.clientHeight + 15) unlockTermsButton(btn); }, 350);
         }
-        function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 35) unlockTermsButton(btn); }
+        function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 30) unlockTermsButton(btn); }
         function unlockTermsButton(btn) { btn.disabled = false; btn.innerText = "✓ 本人已詳細閱讀並完全同意以上條款"; btn.className = "w-full bg-[#5c4d43] text-white p-4 rounded-2xl text-xs font-bold shadow-lg text-center cursor-pointer"; }
         function closeTermsModalWindow() {
             document.getElementById('modalContainer').classList.add('scale-95'); setTimeout(() => document.getElementById('termsModal').classList.add('hidden'), 150);
@@ -525,6 +531,22 @@
                     btn.disabled = true; btn.className = "w-full bg-[#FFEE99]/40 text-[#5C4D43] font-bold py-4 rounded-xl cursor-not-allowed mb-6 text-sm shadow-inner border border-[#E8DFD5]"; btn.innerText = '請完成必填選項、相片、條款與親筆簽名';
                 }
             } catch(e) { console.log(e); }
+        }
+
+        function packDynamicPetsJsonPayload() {
+            const container = document.getElementById('dynamicPetContainer'); const packedPetsArray = []; if(!container) return packedPetsArray;
+            for (let i = 0; i < container.children.length; i++) {
+                const cardEl = container.children[i]; const id = cardEl.id.split('_')[1];
+                let addonsArr = []; cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value));
+                packedPetsArray.push({
+                    name: cardEl.querySelector('.p-name').value.trim(), breed: cardEl.querySelector('.p-breed').value.trim(),
+                    petSize: cardEl.querySelector('.p-size').value, coatType: cardEl.querySelector('.p-coat').value,
+                    personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', healthTag: cardEl.querySelector('.p-heal').value.trim() || '無',
+                    mainService: cardEl.querySelector('.p-main-service').value, addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無',
+                    petPhotoBase64: globalPackedPetPhotos[id] || ""
+                });
+            }
+            return packedPetsArray;
         }
 
         function processBooking() {
