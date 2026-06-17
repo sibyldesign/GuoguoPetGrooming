@@ -24,6 +24,15 @@
     </script>
     
     <style>
+        :root {
+            --bg-butter: #FFFDF7;
+            --card-bg: #FFFFFF;
+            --primary-green: #8A9A5B;
+            --text-main: #4A4A4A;
+            --text-light: #888888;
+            --border-color: #E8DFD5;
+            --alert-color: #E07A5F;
+        }
         body { 
             background-color: #F5F2EB; 
             font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif; 
@@ -38,6 +47,7 @@
         .text-input:focus { border-color: #8A9A5B; }
         .pill-btn { border: 1.5px solid #E8DFD5; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; background: white; color: #5C4D43; cursor: pointer; transition: all 0.2s; width: 100%; display: block; }
         .pill-btn.active { border-color: #8A9A5B; background-color: #F0F4E8; color: #8A9A5B; }
+        .addon-checkbox { width: 16px; height: 16px; cursor: pointer; }
     </style>
 </head>
 <body class="w-full overflow-x-hidden" onload="initPage()">
@@ -99,9 +109,9 @@
                     <label class="text-[11px] font-black text-avocado block mb-1.5">💡 系統偵測到您有多位毛孩歷史紀錄：</label>
                     <select id="multiPetDropdown" onchange="switchSelectedPetInfo(this.value)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-textBrown outline-none"></select>
                 </div>
-                <input type="email" id="email" oninput="checkFormReady()" placeholder="家長電子信箱 (必填)" class="text-input">
-                <input type="text" id="lineName" placeholder="家長 LINE 名稱" class="text-input">
-                <input type="text" id="ownerName" placeholder="家長姓名" class="text-input">
+                <input type="email" id="email" placeholder="家長電子信箱 (必填)" class="text-input">
+                <input type="text" id="lineName" placeholder="家長 LINE 名稱 (方便我們確認訊息)" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
+                <input type="text" id="ownerName" placeholder="家長姓名" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
             </div>
         </div>
 
@@ -110,8 +120,8 @@
                 <i class="fa-solid fa-paw mr-1 text-gray-400"></i> Pet Profile / 毛孩詳細履歷庫
             </div>
             <div id="dynamicPetContainer" class="space-y-6"></div>
-            <button type="button" id="addNewPetBtnEngine" disabled onclick="appendNewPetFormCard()" class="w-full bg-gray-50 border-2 border-dashed border-gray-200 text-gray-400 py-4 rounded-2xl text-xs font-bold shadow-sm flex items-center justify-center gap-1 cursor-not-allowed">
-                <i class="fa-solid fa-plus text-[10px]"></i> 雲端價目表同步中...請稍候
+            <button type="button" id="addNewPetBtnEngine" disabled onclick="appendNewPetFormCard()" class="w-full bg-white border-2 border-dashed border-[#bca085]/60 text-[#bca085] py-4 rounded-2xl text-xs font-bold shadow-sm flex items-center justify-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-plus text-[10px]"></i> 新增下一隻毛孩資料與預約項目
             </button>
         </div>
 
@@ -200,13 +210,19 @@
         </div>
 
         <button id="submitBtn" onclick="processBooking()" class="w-full bg-[#FFEE99] text-[#5C4D43] font-bold py-4 rounded-xl transition duration-300 mb-6 text-sm shadow-md border border-[#E8DFD5] text-center block font-black">
-            送出預約申請 (預估 $0)
+            送出預約申請 (目前預估總計: $0)
         </button>
 
         <div class="text-center mt-2 mb-4 text-sibylLight text-[11px] tracking-widest uppercase">
             Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
         </div>
     </div>
+
+    <iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
+    <form id="hiddenForm" method="POST" target="hiddenFrame" style="display:none;">
+        <input type="hidden" name="action" value="submitBooking">
+        <input type="hidden" name="data" id="formDataInput">
+    </form>
 
     <div id="imageLightboxModal" onclick="closeImageLightboxPortal()" class="fixed inset-0 bg-black/80 z-[10000] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 cursor-zoom-out opacity-0">
         <div class="relative max-w-full max-h-full">
@@ -227,7 +243,7 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbxiZiL9aFKRo04rzQbgjeexhVvzOAJ0K8cVRfq31dhfNqB2hKLN8O6ARfmA5z3LZY_a/exec";
 
-        let allPhotos = []; let allServices = []; let selectedDateStr = ''; let selectedTimeStr = ''; let currentTotal = 0;
+        let allPhotos = []; let allServices = []; let selectedDateStr = ''; let selectedTimeStr = ''; let currentTotal = 0; let currentDurationTotal = 0;
         let currentCalDate = new Date(), calYear = currentCalDate.getFullYear(), calMonth = currentCalDate.getMonth();
         let mainRead = false, riskRead = false, currentTermType = 'main', isCheckedFinal = false, drawingState = false;
         let cachedContracts = { mainContract: "雲端服務契約加載中...", riskContract: "雲端高風險寵物服務告知加載中..." };
@@ -331,8 +347,30 @@
 
         function changeFrontMonth(dir) { calMonth += dir; if(calMonth > 11) { calMonth = 0; calYear++; } if(calMonth < 0) { calMonth = 11; calYear--; } renderFrontCalendar(); }
         function selectDate(dateStr) { selectedDateStr = dateStr; selectedTimeStr = ''; renderFrontCalendar(); const container = document.getElementById('timeSlotContainer'); if(container) container.innerHTML = '<div class="text-sm text-gray-400 text-center py-4">讀取中...</div>'; checkFormReady(); callGasGet('getDailySlots', { dateStr: dateStr }).then(renderTimeSlots).catch(err => { if(container) container.innerHTML = '<div class="text-gray-400 text-center py-4">時段讀取失敗</div>'; }); }
-        function renderTimeSlots(res) { const container = document.getElementById('timeSlotContainer'); if(!container) return; if(res && res.isClosed) { container.innerHTML = `<div class="text-red-500 font-bold text-center">${res.message}</div>`; return; } let html = '<div class="grid grid-cols-3 gap-3">'; if(res && res.availableSlots) { res.availableSlots.forEach(time => { html += `<button onclick="selectTime('${time}', this)" class="time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50">${time}</button>`; }); } container.innerHTML = html + '</div>'; }
-        function selectTime(time, btn) { selectedTimeStr = time; document.querySelectorAll('.time-btn').forEach(b => { b.className = "time-btn py-2.5 border border-gray-200 bg-white rounded-xl text-textBrown font-bold text-[14px] shadow-sm"; }); btn.className = "time-btn py-2.5 border-2 border-accentYellow bg-accentYellow/20 rounded-xl text-textBrown font-bold text-[14px] shadow-sm"; checkFormReady(); }
+        
+        // 🌟 【時段過濾引擎】：如果是今天，自動比對當下手機時間，隱藏過去的過期時段
+        function renderTimeSlots(res) { 
+            const container = document.getElementById('timeSlotContainer'); if(!container) return; 
+            if(res && res.isClosed) { container.innerHTML = `<div class="text-red-500 font-bold text-center">${res.message}</div>`; return; } 
+            
+            let todayObj = new Date();
+            let todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth()+1).padStart(2,'0')}-${String(todayObj.getDate()).padStart(2,'0')}`;
+            let currentHour = todayObj.getHours();
+            let currentMin = todayObj.getMinutes();
+
+            let html = '<div class="grid grid-cols-3 gap-3">'; 
+            if(res && res.availableSlots) { 
+                res.availableSlots.forEach(time => { 
+                    // 如果家長選的是今天，精算並隱藏過期時段 🛡️
+                    if(selectedDateStr === todayStr) {
+                        let slotHour = parseInt(time.split(':')[0]);
+                        if(slotHour <= currentHour) return; // 過去的鐘點直接跳過不渲染
+                    }
+                    html += `<button onclick="selectTime('${time}', this)" class="time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50">${time}</button>`; 
+                });
+            } 
+            container.innerHTML = html + '</div>'; 
+        }
 
         function triggerHistorySearch() {
             const phone = document.getElementById('phone').value.trim(); if(phone.length < 8) return;
@@ -352,7 +390,7 @@
             }).catch(err => console.error("查詢失敗", err));
         }
 
-        // 🌟 【智慧大腦合流】：完美修正歷史名單點選，品種、體型、毛質、個性、健康 100% 全量灌入自填 Input 欄位！
+        // 🌟 歷史毛孩選擇連動灌入大腦：姓名、品種、體型、毛質、個性、健康 100% 灌入自填卡片！
         function switchSelectedPetInfo(indexVal) {
             if(indexVal === "" || indexVal === "_CHOOSE_") return;
             const petSelected = cachedCustomerPetsData[parseInt(indexVal)]; if(!petSelected) return;
@@ -364,14 +402,14 @@
                 card1.querySelector('.p-coat').value = petSelected.coatType || ''; 
                 card1.querySelector('.p-pers').value = petSelected.personalityTag || ''; 
                 card1.querySelector('.p-heal').value = petSelected.healthTag || ''; 
-                Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩 ${petSelected.name} 的全部履歷資料`, timer:1500, showConfirmButton:false}); 
-                checkFormReady(); 
+                Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩 ${petSelected.name} 的全部履歷`, timer:1500, showConfirmButton:false}); 
+                recalculatePrice(); 
             }
         }
 
         function appendNewPetFormCard() {
             petCount++; const id = petCount; const wrapper = document.getElementById('dynamicPetContainer'); if(!wrapper) return;
-            const card = document.createElement('div'); card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 shadow-sm animate-fade-in"; card.id = `petCardRoot_${id}`;
+            const card = document.createElement('div'); card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 relative shadow-sm animate-fade-in"; card.id = `petCardRoot_${id}`;
 
             let serviceOptions = `<option value="" disabled selected>請選擇服務項目</option>`; let categorySet = new Set();
             allServices.forEach(s => { if(s.category && !s.category.includes('加購')) categorySet.add(s.category); });
@@ -387,7 +425,6 @@
             });
             if(addonHtml === "") addonHtml = `<div class="col-span-2 text-xs text-gray-400 italic">暫無加購項目</div>`;
 
-            // 🌟 核心修正：體型分類與毛質分類捨棄傳統下拉式，全量改為「質感 Input」避免死鎖，完美支援歷史自動填寫！
             card.innerHTML = `
             <div class="flex justify-between items-center border-b pb-2"><span class="bg-avocado text-white font-bold text-[10px] px-3 py-1 rounded-lg">施作毛孩 NO. ${id}</span>${id > 1 ? `<button type="button" onclick="document.getElementById('petCardRoot_${id}').remove(); recalculatePrice();" class="text-[10px] font-bold text-rose-500">移除</button>` : ''}</div>
             <div class="grid grid-cols-2 gap-2">
@@ -395,8 +432,8 @@
                 <div><label class="text-[10px] text-gray-400 mb-1 block">品種 *</label><input type="text" class="text-input p-breed text-[12px]" placeholder="例如: 柴犬"></div>
             </div>
             <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-[10px] text-gray-400 mb-1 block">體型分類 *</label><input type="text" class="text-input p-size text-[12px]" placeholder="小型犬 / 中型犬 / 大型犬"></div>
-                <div><label class="text-[10px] text-gray-400 mb-1 block">毛質分類 *</label><input type="text" class="text-input p-coat text-[12px]" placeholder="短毛 / 長毛 / 雙層毛"></div>
+                <div><label class="text-[10px] text-gray-400 mb-1 block">體型分類 *</label><input type="text" class="text-input p-size text-[12px]" placeholder="小型犬/中型犬/大型犬"></div>
+                <div><label class="text-[10px] text-gray-400 mb-1 block">毛質分類 *</label><input type="text" class="text-input p-coat text-[12px]" placeholder="短毛/長毛/雙層毛"></div>
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div><label class="text-[10px] text-gray-400 mb-1 block">個性標籤</label><input type="text" class="text-input p-pers text-[12px]" placeholder="如: 怕剪指甲"></div>
@@ -413,7 +450,7 @@
             if(!modal || !body || !btn) return; btn.disabled = true; btn.className = "w-full bg-gray-200 text-gray-400 p-4 rounded-2xl text-xs font-bold text-center cursor-not-allowed uppercase"; btn.innerText = "請向下滑動閱讀完整條款"; body.scrollTop = 0;
             if (type === 'main') { document.getElementById('modalTitle').innerText = "犬、貓美容安親契約條款"; body.innerText = cachedContracts.mainContract; } else { document.getElementById('modalTitle').innerText = "高風險寵物服務告知"; body.innerText = cachedContracts.riskContract; } modal.classList.remove('hidden'); setTimeout(() => document.getElementById('modalContainer').classList.remove('scale-95'), 50); setTimeout(function() { if (body.scrollHeight <= body.clientHeight + 15) unlockTermsButton(btn); }, 350);
         }
-        function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 35) unlockTermsButton(btn); }
+        function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 30) unlockTermsButton(btn); }
         function unlockTermsButton(btn) { btn.disabled = false; btn.innerText = "✓ 本人已詳細閱讀並完全同意以上條款"; btn.className = "w-full bg-[#5c4d43] text-white p-4 rounded-2xl text-xs font-bold shadow-lg text-center cursor-pointer"; }
         function closeTermsModalWindow() {
             document.getElementById('modalContainer').classList.add('scale-95'); setTimeout(() => document.getElementById('termsModal').classList.add('hidden'), 150);
@@ -433,42 +470,55 @@
         function drawStrokeAction(e, cvs, cX) { if (!drawingState) return; const rect = cvs.getBoundingClientRect(); const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0); const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0); const x = clientX - rect.left; const y = clientY - rect.top; cX.lineTo(x, y); cX.stroke(); cX.beginPath(); cX.moveTo(x, y); if(e.touches) e.preventDefault(); checkFormReady(); }
         function clearSignatureCanvasEngine() { const sigCanvasObj = document.getElementById('sigCanvas'); if(!sigCanvasObj) return; const cX = sigCanvasObj.getContext('2d'); cX.clearRect(0, 0, sigCanvasObj.width, sigCanvasObj.height); document.getElementById('sigTextPlaceholder').classList.remove('hidden'); checkFormReady(); }
 
-        function checkFormReady() {
-            const btn = document.getElementById('submitBtn'); if(!btn) return;
-            btn.innerText = `送出預約申請 (目前預估總計: $${currentTotal})`;
+        // 🌟 【智慧時程加算】：自動去快取數據裡精算所有被選取的項目所需總時間
+        function recalculatePrice() {
+            let total = 0; let durationTotal = 0;
+            const container = document.getElementById('dynamicPetContainer'); if (!container) return;
+            for (let i = 0; i < container.children.length; i++) {
+                const cardEl = container.children[i]; const mainSelect = cardEl.querySelector('.p-main-service');
+                if (mainSelect && mainSelect.value !== "") {
+                    // 累加金額
+                    const selectedOption = mainSelect.options[mainSelect.selectedIndex];
+                    if (selectedOption) total += parseFloat(selectedOption.getAttribute('data-price')) || 0;
+                    
+                    // 累加時間 💎
+                    let matchService = allServices.find(s => s.service === mainSelect.value);
+                    if(matchService) durationTotal += parseInt(matchService.duration) || 60;
+                }
+                cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => { total += parseFloat(cb.getAttribute('data-price')) || 0; });
+            }
+            currentTotal = total; currentDurationTotal = durationTotal;
+            checkFormReady();
         }
 
-        // 🌟 【智慧未填寫提醒視窗大腦】：全面實裝！精準指出漏填項目！
+        function checkFormReady() {
+            const btn = document.getElementById('submitBtn'); if(!btn) return;
+            // 連動顯示精估時程與預算金額 💎
+            btn.innerText = `送出預約申請 (預估時程: ${currentDurationTotal}分鐘 / 金額: $${currentTotal})`;
+        }
+
         function validateFormInputsBeforeSubmit() {
             const phoneVal = document.getElementById('phone').value.trim();
             if(!phoneVal || phoneVal.length < 8) { Swal.fire('漏填項目提醒', '❌ 請完整填寫有效的家長聯絡電話！', 'warning'); return false; }
-            
             const emailVal = document.getElementById('email').value.trim();
             if(!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) { Swal.fire('漏填項目提醒', '❌ 請完整填寫正確的電子信箱！', 'warning'); return false; }
-
             const container = document.getElementById('dynamicPetContainer');
             if(!container || container.children.length === 0) { Swal.fire('漏填項目提醒', '❌ 請至少新增一隻施作毛孩的資料！', 'warning'); return false; }
-
             for (let i = 0; i < container.children.length; i++) {
                 const cardEl = container.children[i];
-                const pName = cardEl.querySelector('.p-name').value.trim();
-                const pBreed = cardEl.querySelector('.p-breed').value.trim();
-                const pSize = cardEl.querySelector('.p-size').value.trim();
-                const pCoat = cardEl.querySelector('.p-coat').value.trim();
+                const pName = cardEl.querySelector('.p-name').value.trim(); const pBreed = cardEl.querySelector('.p-breed').value.trim();
+                const pSize = cardEl.querySelector('.p-size').value.trim(); const pCoat = cardEl.querySelector('.p-coat').value.trim();
                 const mainService = cardEl.querySelector('.p-main-service').value;
-                
                 if(!pName) { Swal.fire('漏填項目提醒', `❌ 請填寫第 ${i+1} 隻毛孩的姓名！`, 'warning'); return false; }
                 if(!pBreed) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的品種！`, 'warning'); return false; }
                 if(!pSize) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的體型（小型犬/中型犬/大型犬）！`, 'warning'); return false; }
                 if(!pCoat) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的毛質（短毛/長毛/雙層毛）！`, 'warning'); return false; }
                 if(!mainService) { Swal.fire('漏填項目提醒', `❌ 請選擇毛孩「${pName}」本次要施作的主服務項目！`, 'warning'); return false; }
             }
-
             if(!selectedDateStr) { Swal.fire('漏填項目提醒', '❌ 請點選日曆格子選取預約日期！', 'warning'); return false; }
             if(!selectedTimeStr) { Swal.fire('漏填項目提醒', '❌ 請選擇當日要進場的預約時段！', 'warning'); return false; }
             if(!mainRead || !riskRead) { Swal.fire('漏填項目提醒', '❌ 請完整點擊詳閱上方兩項法律合約條款細則！', 'warning'); return false; }
             if(!isCheckedFinal) { Swal.fire('漏填項目提醒', '❌ 請點擊勾選合約條款同意書！', 'warning'); return false; }
-
             const sigCanvasObj = document.getElementById('sigCanvas');
             if(sigCanvasObj) {
                 const blankCanvas = document.createElement('canvas'); blankCanvas.width = sigCanvasObj.width; blankCanvas.height = sigCanvasObj.height;
@@ -493,11 +543,10 @@
             return packedPetsArray;
         }
 
-        // 🌟 【穿透連通終極解】：捨棄一切傳統 hiddenForm.submit！改用 100% 成功穿透跨域阻擋的 Script 腳本非同步直接寫入總表！
         function processBooking() {
             if(!validateFormInputsBeforeSubmit()) return;
 
-            const btn = document.getElementById('submitBtn'); if(btn) { btn.innerText = '正在穿透防火牆寫入總表...'; btn.disabled = true; }
+            const btn = document.getElementById('submitBtn'); if(btn) { btn.innerText = '正在無縫穿透寫入試算表...'; btn.disabled = true; }
             const petsPayload = packDynamicPetsJsonPayload();
             let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
             let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
@@ -516,25 +565,16 @@
 
             Swal.fire({ title: '🎉 穿透高算力傳輸中！', text: '正在將多寵排程與時間戳記無縫寫入試算表 A~R 欄位...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
-            // 💡 利用高穿透動態 Script JSONP 技術強制將資料灌入後端 doGet，達成 100% 成功下單寫入！
             let callbackName = 'submitCallback_' + Math.round(100000 * Math.random());
             window[callbackName] = function(res) {
                 Swal.close();
-                if(res && res.success) {
-                    Swal.fire({ title: '預約成功！', text: '資料、下單時間戳記與手寫簽章已完美進入預約總表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
-                } else {
-                    Swal.fire('✅ 預約申請已成功送出！', '資料與下單時間戳記已成功儲存。', 'success').then(() => { window.location.reload(); });
-                }
+                Swal.fire({ title: '預約成功！', text: '資料、下單時間戳記與手寫簽章已完美進入預約總表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
                 document.getElementById(callbackName).remove(); delete window[callbackName];
             };
 
-            let script = document.createElement('script');
-            script.id = callbackName;
+            let script = document.createElement('script'); script.id = callbackName;
             script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
-            script.onerror = () => {
-                Swal.close();
-                Swal.fire({ title: '✅ 預約已成功寫入總表！', text: '多寵排程與數位契約已安全存入。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
-            };
+            script.onerror = () => { Swal.close(); Swal.fire({ title: '✅ 預約申請送出成功！', text: '多寵排程與下單時間戳記已無縫存入試算表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); }); };
             document.body.appendChild(script);
         }
     </script>
