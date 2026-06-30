@@ -372,6 +372,25 @@
             container.innerHTML = html + '</div>'; 
         }
 
+// 🌟 新增：處理時段點擊選取與 UI 高亮切換的引擎
+function selectTime(timeStr, btnEl) {
+  // 1. 紀錄家長選定的時段字串
+  selectedTimeStr = timeStr;
+  
+  // 2. 移除所有時段按鈕的高亮樣式，恢復成預設白底
+  document.querySelectorAll('.time-btn').forEach(btn => {
+    btn.className = "time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50";
+  });
+  
+  // 3. 為當前被點擊的按鈕加上酪梨綠（avocado）的高亮選取樣式
+  if (btnEl) {
+    btnEl.className = "time-btn py-2.5 border border-avocado bg-green-50/60 text-avocado font-black text-[14px] shadow-sm rounded-xl transform scale-102 transition";
+  }
+  
+  // 4. 檢查表單狀態並更新底部的送出預算按鈕
+  checkFormReady();
+}
+        
         function triggerHistorySearch() {
             const phone = document.getElementById('phone').value.trim(); if(phone.length < 8) return;
             callGasGet('checkCustomerHistory', { phone: phone }).then(res => {
