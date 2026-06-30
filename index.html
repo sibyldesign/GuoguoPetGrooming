@@ -576,47 +576,83 @@ function packDynamicPetsJsonPayload() {
 
 // 2. 修正送出排程，將多寵照片主體打包進 payload 穿透給大腦 [cite: 1901]
 function processBooking() {
-  if(!validateFormInputsBeforeSubmit()) return; // [cite: 1902]
+  if(!validateFormInputsBeforeSubmit()) return;
 
   const btn = document.getElementById('submitBtn'); 
-  if(btn) { btn.innerText = '正在無縫穿透寫入試算表...'; btn.disabled = true; } // [cite: 1903]
+  if(btn) { 
+    btn.innerText = '正在寫入預約系統...'; 
+    btn.disabled = true; 
+  }
   
-  const petsPayload = packDynamicPetsJsonPayload(); // [cite: 1904]
-  let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")"); // [cite: 1905]
-  let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無'); // [cite: 1906]
-  const sigCanvasObj = document.getElementById('sigCanvas'); // [cite: 1908]
+  const petsPayload = packDynamicPetsJsonPayload();
+  let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
+  let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+  const sigCanvasObj = document.getElementById('sigCanvas');
 
+  // 🌟 核心修正：封裝完全對齊開發者獨立大腦預期的欄位結構
   const formData = {
-    date: selectedDateStr, // [cite: 1910]
-    time: selectedTimeStr, // [cite: 1910]
-    phone: document.getElementById('phone').value.trim(), // [cite: 1910]
-    lineName: document.getElementById('lineName').value, // [cite: 1910]
-    ownerName: document.getElementById('ownerName').value, // [cite: 1911]
-    email: document.getElementById('email').value.trim(), // [cite: 1911]
-    mainService: mainServicesCombined.join(', '), // [cite: 1912]
-    addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無', // [cite: 1912]
-    price: currentTotal, // [cite: 1913]
-    remark: '前台多寵物數位合約單', // [cite: 1913]
-    contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }), // [cite: 1914]
-    petsJsonString: JSON.stringify(petsPayload), // [cite: 1915]
-    signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : "" // [cite: 1916]
+    date: selectedDateStr,
+    time: selectedTimeStr,
+    phone: document.getElementById('phone').value.trim(),
+    lineName: document.getElementById('lineName').value,
+    ownerName: document.getElementById('ownerName').value,
+    email: document.getElementById('email').value.trim(),
+    mainService: mainServicesCombined.join(', '),
+    addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+    price: currentTotal,
+    remark: '前台多寵物數位合約單',
+    contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+    petsJsonString: JSON.stringify(petsPayload),
+    // 傳送主相片 Base64 與簽名 Base64 給大腦直接存檔
+    petPhotoBase64: globalPackedPetPhotos[1] || "", 
+    signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
   };
 
-  Swal.fire({ title: '🎉 穿透高算力傳輸中！', text: '正在將多寵排程與時間戳記無縫寫入試算表...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() }); // [cite: 1918]
+  Swal.fire({ 
+    title: '🎉 正在傳輸預約資料！', 
+    text: '正在將您的排程與數位簽章寫入系統總表...', 
+    icon: 'info', 
+    allowOutsideClick: false, 
+    showConfirmButton: false, 
+    didOpen: () => Swal.showLoading() 
+  });
 
-  let callbackName = 'submitCallback_' + Math.round(100000 * Math.random()); // [cite: 1919]
-  window[callbackName] = function(res) { // [cite: 1920]
-    Swal.close(); // [cite: 1921]
-    Swal.fire({ title: '預約成功！', text: '資料、照片與手寫簽章已完美進入預約總表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); }); // [cite: 1922]
-    document.getElementById(callbackName).remove(); delete window[callbackName]; // [cite: 1923]
+  let callbackName = 'submitCallback_' + Math.round(100000 * Math.random());
+  window[callbackName] = function(res) {
+    Swal.close();
+    if (res && res.success) {
+      Swal.fire({ 
+        title: '預約成功！', 
+        text: '資料、照片與手寫簽章已完美進入預約總表。', 
+        icon: 'success', 
+        confirmButtonColor: '#8A9A5B' 
+      }).then(() => { 
+        window.location.reload(); 
+      });
+    } else {
+      Swal.fire('預約失敗', '系統寫入發生錯誤：' + (res.error || '未知錯誤'), 'error');
+      if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
+    }
+    document.getElementById(callbackName).remove(); 
+    delete window[callbackName];
   };
 
-  let script = document.createElement('script'); script.id = callbackName; // [cite: 1925]
-  script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`; // [cite: 1926]
-  script.onerror = () => { // [cite: 1927]
-    Swal.close(); Swal.fire({ title: '✅ 預約申請送出成功！', text: '多寵排程與下單時間戳記已無縫存入試算表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); }); // [cite: 1927]
+  // 透過穿透通道打向你（開發者）重新部署後的全新 Web App URL
+  let script = document.createElement('script'); 
+  script.id = callbackName;
+  script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
+  script.onerror = () => {
+    Swal.close(); 
+    Swal.fire({ 
+      title: '✅ 預約申請送出！', 
+      text: '排程已成功存入試算表，請至後台確認。', 
+      icon: 'success', 
+      confirmButtonColor: '#8A9A5B' 
+    }).then(() => { 
+      window.location.reload(); 
+    });
   };
-  document.body.appendChild(script); // [cite: 1929]
+  document.body.appendChild(script);
 }
     </script>
 </body>
