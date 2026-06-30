@@ -221,7 +221,7 @@
     <iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
     <form id="hiddenForm" method="POST" target="hiddenFrame" style="display:none;">
         <input type="hidden" name="action" value="submitBooking">
-        <input type="hidden" name="data" id="formDataInput">
+        <input type="hidden" name="data" id="Input">
     </form>
 
     <div id="imageLightboxModal" onclick="closeImageLightboxPortal()" class="fixed inset-0 bg-black/80 z-[10000] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 cursor-zoom-out opacity-0">
@@ -527,56 +527,78 @@
             return true;
         }
 
-        function packDynamicPetsJsonPayload() {
-            const container = document.getElementById('dynamicPetContainer'); const packedPetsArray = []; if(!container) return packedPetsArray;
-            for (let i = 0; i < container.children.length; i++) {
-                const cardEl = container.children[i]; const id = cardEl.id.split('_')[1];
-                let addonsArr = []; cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value));
-                packedPetsArray.push({
-                    name: cardEl.querySelector('.p-name').value.trim(), breed: cardEl.querySelector('.p-breed').value.trim(),
-                    petSize: cardEl.querySelector('.p-size').value.trim(), coatType: cardEl.querySelector('.p-coat').value.trim(),
-                    personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', healthTag: cardEl.querySelector('.p-heal').value.trim() || '無',
-                    mainService: cardEl.querySelector('.p-main-service').value, addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無',
-                    petPhotoBase64: globalPackedPetPhotos[id] || ""
-                });
-            }
-            return packedPetsArray;
-        }
+        // 1. 確保多寵卡片打包時，將每隻毛孩的 Base64 壓入 JSON 陣列 [cite: 1886]
+function packDynamicPetsJsonPayload() {
+  const container = document.getElementById('dynamicPetContainer'); // [cite: 1887]
+  const packedPetsArray = []; 
+  if(!container) return packedPetsArray; // [cite: 1887]
+  
+  for (let i = 0; i < container.children.length; i++) { // [cite: 1888]
+    const cardEl = container.children[i]; // [cite: 1889]
+    const id = cardEl.id.split('_')[1]; // [cite: 1889]
+    let addonsArr = []; 
+    cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value)); // [cite: 1890]
+    
+    packedPetsArray.push({
+      name: cardEl.querySelector('.p-name').value.trim(), // [cite: 1892]
+      breed: cardEl.querySelector('.p-breed').value.trim(), // [cite: 1892]
+      petSize: cardEl.querySelector('.p-size').value.trim(), // [cite: 1893]
+      coatType: cardEl.querySelector('.p-coat').value.trim(), // [cite: 1893]
+      personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', // [cite: 1894]
+      healthTag: cardEl.querySelector('.p-heal').value.trim() || '無', // [cite: 1894]
+      mainService: cardEl.querySelector('.p-main-service').value, // [cite: 1895]
+      addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無', // [cite: 1895]
+      // 🌟 核心：完整保留每隻毛孩獨立上傳的真實照片 Base64 資料 [cite: 1896]
+      petPhotoBase64: globalPackedPetPhotos[id] || "" // [cite: 1896]
+    });
+  }
+  return packedPetsArray; // [cite: 1899]
+}
 
-        function processBooking() {
-            if(!validateFormInputsBeforeSubmit()) return;
+// 2. 修正送出排程，將多寵照片主體打包進 payload 穿透給大腦 [cite: 1901]
+function processBooking() {
+  if(!validateFormInputsBeforeSubmit()) return; // [cite: 1902]
 
-            const btn = document.getElementById('submitBtn'); if(btn) { btn.innerText = '正在無縫穿透寫入試算表...'; btn.disabled = true; }
-            const petsPayload = packDynamicPetsJsonPayload();
-            let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
-            let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-            let primaryPhoto = ""; for(let key in globalPackedPetPhotos) { if(globalPackedPetPhotos[key]) { primaryPhoto = globalPackedPetPhotos[key]; break; } }
-            const sigCanvasObj = document.getElementById('sigCanvas');
+  const btn = document.getElementById('submitBtn'); 
+  if(btn) { btn.innerText = '正在無縫穿透寫入試算表...'; btn.disabled = true; } // [cite: 1903]
+  
+  const petsPayload = packDynamicPetsJsonPayload(); // [cite: 1904]
+  let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")"); // [cite: 1905]
+  let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無'); // [cite: 1906]
+  const sigCanvasObj = document.getElementById('sigCanvas'); // [cite: 1908]
 
-            const formData = {
-                date: selectedDateStr, time: selectedTimeStr, phone: document.getElementById('phone').value.trim(), lineName: document.getElementById('lineName').value,
-                ownerName: document.getElementById('ownerName').value, email: document.getElementById('email').value.trim(),
-                mainService: mainServicesCombined.join(', '), addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-                price: currentTotal, remark: '前台多寵物數位合約單',
-                contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-                petsJsonString: JSON.stringify(petsPayload), petPhotoBase64: primaryPhoto,
-                signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-            };
+  const formData = {
+    date: selectedDateStr, // [cite: 1910]
+    time: selectedTimeStr, // [cite: 1910]
+    phone: document.getElementById('phone').value.trim(), // [cite: 1910]
+    lineName: document.getElementById('lineName').value, // [cite: 1910]
+    ownerName: document.getElementById('ownerName').value, // [cite: 1911]
+    email: document.getElementById('email').value.trim(), // [cite: 1911]
+    mainService: mainServicesCombined.join(', '), // [cite: 1912]
+    addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無', // [cite: 1912]
+    price: currentTotal, // [cite: 1913]
+    remark: '前台多寵物數位合約單', // [cite: 1913]
+    contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }), // [cite: 1914]
+    petsJsonString: JSON.stringify(petsPayload), // [cite: 1915]
+    signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : "" // [cite: 1916]
+  };
 
-            Swal.fire({ title: '🎉 穿透高算力傳輸中！', text: '正在將多寵排程與時間戳記無縫寫入試算表 A~R 欄位...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+  Swal.fire({ title: '🎉 穿透高算力傳輸中！', text: '正在將多寵排程與時間戳記無縫寫入試算表...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() }); // [cite: 1918]
 
-            let callbackName = 'submitCallback_' + Math.round(100000 * Math.random());
-            window[callbackName] = function(res) {
-                Swal.close();
-                Swal.fire({ title: '預約成功！', text: '資料、下單時間戳記與手寫簽章已完美進入預約總表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
-                document.getElementById(callbackName).remove(); delete window[callbackName];
-            };
+  let callbackName = 'submitCallback_' + Math.round(100000 * Math.random()); // [cite: 1919]
+  window[callbackName] = function(res) { // [cite: 1920]
+    Swal.close(); // [cite: 1921]
+    Swal.fire({ title: '預約成功！', text: '資料、照片與手寫簽章已完美進入預約總表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); }); // [cite: 1922]
+    document.getElementById(callbackName).remove(); delete window[callbackName]; // [cite: 1923]
+  };
 
-            let script = document.createElement('script'); script.id = callbackName;
-            script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
-            script.onerror = () => { Swal.close(); Swal.fire({ title: '✅ 預約申請送出成功！', text: '多寵排程與下單時間戳記已無縫存入試算表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); }); };
-            document.body.appendChild(script);
-        }
+  let script = document.createElement('script'); script.id = callbackName; // [cite: 1925]
+  script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`; // [cite: 1926]
+  script.onerror = () => { // [cite: 1927]
+    Swal.close(); Swal.fire({ title: '✅ 預約申請送出成功！', text: '多寵排程與下單時間戳記已無縫存入試算表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); }); // [cite: 1927]
+  };
+  document.body.appendChild(script); // [cite: 1929]
+}
     </script>
 </body>
 </html>
