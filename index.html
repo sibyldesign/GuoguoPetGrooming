@@ -589,7 +589,14 @@ function processBooking() {
   let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
   const sigCanvasObj = document.getElementById('sigCanvas');
 
-  // 🌟 核心修正：封裝完全對齊開發者獨立大腦預期的欄位結構
+  // 🌟 終極修正：將所有動態卡片的真實相片 Base64 完整打包成一個物件
+  let allPhotosPackedMap = {};
+  for (let key in globalPackedPetPhotos) {
+    if (globalPackedPetPhotos[key]) {
+      allPhotosPackedMap[key] = globalPackedPetPhotos[key];
+    }
+  }
+
   const formData = {
     date: selectedDateStr,
     time: selectedTimeStr,
@@ -603,14 +610,14 @@ function processBooking() {
     remark: '前台多寵物數位合約單',
     contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
     petsJsonString: JSON.stringify(petsPayload),
-    // 傳送主相片 Base64 與簽名 Base64 給大腦直接存檔
-    petPhotoBase64: globalPackedPetPhotos[1] || "", 
+    // 🌟 改傳全體照片對照表與手寫簽名 Base64
+    multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
     signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
   };
 
   Swal.fire({ 
-    title: '🎉 正在傳輸預約資料！', 
-    text: '正在將您的排程與數位簽章寫入系統總表...', 
+    title: '🎉 同步中...', 
+    text: '正在將多寵排程與數位簽章寫入系統總表...', 
     icon: 'info', 
     allowOutsideClick: false, 
     showConfirmButton: false, 
@@ -621,36 +628,20 @@ function processBooking() {
   window[callbackName] = function(res) {
     Swal.close();
     if (res && res.success) {
-      Swal.fire({ 
-        title: '預約成功！', 
-        text: '資料、照片與手寫簽章已完美進入預約總表。', 
-        icon: 'success', 
-        confirmButtonColor: '#8A9A5B' 
-      }).then(() => { 
-        window.location.reload(); 
-      });
+      Swal.fire({ title: '預約成功！', text: '資料、照片與手寫簽章已完美進入預約總表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
     } else {
-      Swal.fire('預約失敗', '系統寫入發生錯誤：' + (res.error || '未知錯誤'), 'error');
+      Swal.fire('預約失敗', '系統寫入錯誤：' + (res.error || '未知錯誤'), 'error');
       if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
     }
-    document.getElementById(callbackName).remove(); 
-    delete window[callbackName];
+    document.getElementById(callbackName).remove(); delete window[callbackName];
   };
 
-  // 透過穿透通道打向你（開發者）重新部署後的全新 Web App URL
   let script = document.createElement('script'); 
   script.id = callbackName;
   script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
   script.onerror = () => {
     Swal.close(); 
-    Swal.fire({ 
-      title: '✅ 預約申請送出！', 
-      text: '排程已成功存入試算表，請至後台確認。', 
-      icon: 'success', 
-      confirmButtonColor: '#8A9A5B' 
-    }).then(() => { 
-      window.location.reload(); 
-    });
+    Swal.fire({ title: '✅ 預約申請送出！', text: '排程已成功存入試算表，請至後台確認。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
   };
   document.body.appendChild(script);
 }
