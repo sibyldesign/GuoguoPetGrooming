@@ -145,6 +145,7 @@
             </div>
         </div>
 
+        <!-- 🌟 【法律條款與數位簽署區】全面解鎖復原線，排除一切語法報錯 -->
         <div class="bg-white border border-[#eae5df] rounded-[2rem] p-6 shadow-sm space-y-4">
             <div class="text-[11px] font-bold text-[#bca085] mb-2.5 block tracking-widest uppercase">
                 <i class="fa-solid fa-file-signature text-gray-400 mr-1"></i> Verification / 法律條款與數位簽署
@@ -215,6 +216,28 @@
 
         <div class="text-center mt-2 mb-4 text-sibylLight text-[11px] tracking-widest uppercase">
             Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
+        </div>
+    </div>
+
+    <iframe id="hiddenFrame" name="hiddenFrame" style="display:none;"></iframe>
+    <form id="hiddenForm" method="POST" target="hiddenFrame" style="display:none;">
+        <input type="hidden" name="action" value="submitBooking">
+        <input type="hidden" name="data" id="Input">
+    </form>
+
+    <div id="imageLightboxModal" onclick="closeImageLightboxPortal()" class="fixed inset-0 bg-black/80 z-[10000] hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 cursor-zoom-out opacity-0">
+        <div class="relative max-w-full max-h-full">
+            <img id="lightboxTargetImg" src="" class="max-w-md max-h-[85vh] object-contain rounded-2xl border-4 border-white/10 shadow-2xl">
+        </div>
+    </div>
+
+    <div id="termsModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-md bg-black/50 transition-all duration-300">
+        <div class="bg-white w-full max-w-md h-[80vh] rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl border border-[#eae5df]/50 transition-transform duration-300 scale-95" id="modalContainer">
+            <div id="modalTitle" class="p-5 font-bold text-center border-b border-gray-100 text-[15px] text-[#211c1b]"> 合約條款細則 </div>
+            <div id="modalBody" class="p-6 flex-1 overflow-y-auto text-xs leading-relaxed text-gray-500 whitespace-pre-line bg-gray-50/50" onscroll="handleModalScrollEngine()"> 載入中... </div>
+            <div class="p-5 border-t border-gray-100 bg-white">
+                <button type="button" id="modalCloseBtn" disabled onclick="closeTermsModalWindow()" class="w-full bg-gray-200 text-gray-400 p-4 rounded-2xl text-xs font-bold transition-all duration-300 tracking-widest uppercase"> 請向下滑動閱讀完整條款 </button>
+            </div>
         </div>
     </div>
 
@@ -362,7 +385,9 @@
             const phone = document.getElementById('phone').value.trim(); if(phone.length < 8) return;
             callGasGet('checkCustomerHistory', { phone: phone }).then(res => {
                 if(res && res.found) {
-                    document.getElementById('ownerName').value = res.ownerName || ''; document.getElementById('lineName').value = res.lineName || ''; if(res.email) document.getElementById('email').value = res.email || '';
+                    document.getElementById('ownerName').value = res.ownerName || ''; 
+                    document.getElementById('lineName').value = res.lineName || ''; 
+                    if(res.email) document.getElementById('email').value = res.email || '';
                     cachedCustomerPetsData = res.petList || []; const petDropdown = document.getElementById('multiPetDropdown'); const petBlock = document.getElementById('multiPetSelectBlock');
                     if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
                         let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位毛孩歷史紀錄，請點選帶入 ---</option>`;
@@ -430,7 +455,6 @@
             wrapper.appendChild(card); card.querySelectorAll('.addon-checkbox').forEach(cb => { cb.addEventListener('change', recalculatePrice); }); checkFormReady();
         }
 
-        // 🌟 核心修正補漏：打包多張相片的二進位快取機制
         function previewAndPackIndividualPetImage(inputEl, id) {
             if (inputEl.files && inputEl.files[0]) {
                 const reader = new FileReader();
@@ -454,8 +478,13 @@
         }
         function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 30) unlockTermsButton(btn); }
         function unlockTermsButton(btn) { btn.disabled = false; btn.innerText = "✓ 本人已詳細閱讀並完全同意以上條款"; btn.className = "w-full bg-[#5c4d43] text-white p-4 rounded-2xl text-xs font-bold shadow-lg text-center cursor-pointer"; }
+        
+        // 🌟 【復原與重構核心線】：修正原先 scale95 導致的 JavaScript 執行崩潰，法規解鎖大回歸！
         function closeTermsModalWindow() {
-            if(document.getElementById('modalContainer')) document.getElementById('modalContainer').classList.add('scale-95'); setTimeout(() => document.getElementById('termsModal').classList.add('hidden'), 150);
+            let containerEl = document.getElementById('modalContainer');
+            if(containerEl) containerEl.classList.add('scale-95'); 
+            setTimeout(() => document.getElementById('termsModal').classList.add('hidden'), 150);
+            
             if (currentTermType === 'main') { mainRead = true; document.getElementById('badge_main').innerText = "已完成"; document.getElementById('badge_main').className = "text-[10px] bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold w-14 text-center"; }
             else { riskRead = true; document.getElementById('badge_risk').innerText = "已完成"; document.getElementById('badge_risk').className = "text-[10px] bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold w-14 text-center"; }
             if (mainRead && riskRead) { document.getElementById('signatureLockCover').classList.add('hidden'); document.getElementById('signatureUnlockBlock').classList.remove('hidden'); setTimeout(initDigitalSignatureCanvasEngine, 150); } checkFormReady();
@@ -550,10 +579,8 @@
           return packedPetsArray; 
         }
 
-        // 🌟 革命升級：完全捨棄易爆網址長度的 GET 請求，改用標準大容量 POST 通訊！
         function processBooking() {
           if(!validateFormInputsBeforeSubmit()) return;
-
           const btn = document.getElementById('submitBtn'); 
           if(btn) { btn.innerText = '正在寫入預約系統...'; btn.disabled = true; }
           
@@ -587,19 +614,18 @@
 
           Swal.fire({ title: '同步中...', text: '', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
-          // 🌟 商業高階改版：使用標準 POST 發送，徹底免除 Request-URI Too Long 網址過長卡單
+          // 🌟 終極 POST 數據流通訊，徹底摧毀網址過長死鎖
           fetch(API_URL, {
             method: "POST",
-            mode: "no-cors", // 突破 Google Apps Script 跨網域封鎖
+            mode: "no-cors",
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({ action: "submitBooking", payload: formData })
           }).then(() => {
             Swal.close();
-            // 🌟 完美銜接：自動代入家長的 LINE 名稱進入推播明細，打通 0 元喚醒免扣款機制
+            // 🌟 完美帶入：家長姓名與 LINE 名稱完美打包進回條，發送不扣一分錢
             let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
             let lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(lineText)}`;
 
-            // 🌟 修正彈窗：一字不差「預約成功！」
             Swal.fire({ 
               title: '預約成功！', 
               html: `<p class="text-xs text-gray-500 mb-2">請點擊下方按鈕，發送確認回條給我們確認喔！❤️</p>`,
@@ -612,7 +638,6 @@
             });
           }).catch(err => {
             Swal.close();
-            // 🌟 修正：網絡超時備援彈窗一字不差「預約成功送出！」
             Swal.fire({ title: '預約成功送出！', text: '', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
           });
         }
