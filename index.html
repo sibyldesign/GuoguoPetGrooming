@@ -40,7 +40,7 @@
             margin: 0; 
             padding: 0; 
         }
-        .app-card { background: white; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); position: relative; overflow: hidden; }
+        .app-card { background: white; border-radius: 16px; shadow-sm; position: relative; overflow: hidden; }
         .option-card { background-color: #FFFFFF; border: 1.5px solid #E8DFD5; transition: all 0.2s ease-in-out; }
         .hidden-radio:checked + .option-card { border-color: #FFEE99; background-color: #FFFFF0; }
         .text-input { width: 100%; padding: 12px; background: white; border: 1px solid #E8DFD5; border-radius: 12px; font-size: 14px; outline: none; transition: all 0.2s; display: block; box-sizing: border-box; }
@@ -106,18 +106,19 @@
                     </button>
                 </div>
                 <div id="multiPetSelectBlock" class="hidden border border-dashed border-avocado rounded-xl p-3 bg-green-50/40">
-                    <label class="text-[11px] font-black text-avocado block mb-1.5">💡 系統偵測到您有多位毛孩歷史紀錄：</label>
+                    <label class="text-[11px] font-black text-avocado block mb-1.5">💡 系統查到您有多位毛孩歷史紀錄：</label>
                     <select id="multiPetDropdown" onchange="switchSelectedPetInfo(this.value)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-textBrown outline-none"></select>
                 </div>
-                <input type="email" id="email" placeholder="家長電子信箱 (必填)" class="text-input">
-                <input type="text" id="lineName" placeholder="家長 LINE 名稱 (方便我們確認訊息) *" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
+                <!-- 🌟 修正：補充家長提示文字，指明自動寄送契約副本 -->
+                <input type="email" id="email" placeholder="家長電子信箱 (必填，將自動寄送契約副本審閱留存憑證)" class="text-input text-xs">
+                <input type="text" id="lineName" placeholder="家長 LINE 名稱 (方便我們找到您) *" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
                 <input type="text" id="ownerName" placeholder="家長姓名" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
             </div>
         </div>
 
         <div class="bg-white border border-[#eae5df] rounded-[2rem] p-6 shadow-sm space-y-4">
             <div class="text-[11px] font-bold text-[#bca085] mb-2 tracking-widest uppercase">
-                <i class="fa-solid fa-paw mr-1 text-gray-400"></i> Pet Profile / 毛孩詳細履歷庫
+                <i class="fa-solid fa-paw mr-1 text-gray-400"></i> Pet Profile / 毛孩詳細履歷
             </div>
             <div id="dynamicPetContainer" class="space-y-6"></div>
             <button type="button" id="addNewPetBtnEngine" disabled onclick="appendNewPetFormCard()" class="w-full bg-white border-2 border-dashed border-[#bca085]/60 text-[#bca085] py-4 rounded-2xl text-xs font-bold shadow-sm flex items-center justify-center gap-1 cursor-pointer">
@@ -145,7 +146,6 @@
             </div>
         </div>
 
-        <!-- 🌟 【法律條款與數位簽署區】全面解鎖復原線，排除一切語法報錯 -->
         <div class="bg-white border border-[#eae5df] rounded-[2rem] p-6 shadow-sm space-y-4">
             <div class="text-[11px] font-bold text-[#bca085] mb-2.5 block tracking-widest uppercase">
                 <i class="fa-solid fa-file-signature text-gray-400 mr-1"></i> Verification / 法律條款與數位簽署
@@ -210,7 +210,7 @@
             <i class="far fa-clock mr-1"></i> 營業時間 9:00-18:30
         </div>
 
-        <button id="submitBtn" onclick="()" class="w-full bg-[#FFEE99] text-[#5C4D43] font-bold py-4 rounded-xl transition duration-300 mb-6 text-sm shadow-md border border-[#E8DFD5] text-center block font-black">
+        <button id="submitBtn" onclick="processBooking()" class="w-full bg-[#FFEE99] text-[#5C4D43] font-bold py-4 rounded-xl transition duration-300 mb-6 text-sm shadow-md border border-[#E8DFD5] text-center block font-black">
             送出預約申請 (目前預估總計: $0)
         </button>
 
@@ -233,7 +233,7 @@
 
     <div id="termsModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4 backdrop-blur-md bg-black/50 transition-all duration-300">
         <div class="bg-white w-full max-w-md h-[80vh] rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl border border-[#eae5df]/50 transition-transform duration-300 scale-95" id="modalContainer">
-            <div id="modalTitle" class="p-5 font-bold text-center border-b border-gray-100 text-[15px] text-[#211c1b]"> 合約條款細則 </div>
+            <div id="modalTitle" class="p-5 font-bold text-center border-b border-gray-100 text-[15px] text-[#211c1b]"> 📜 合約條款與審閱細則 </div>
             <div id="modalBody" class="p-6 flex-1 overflow-y-auto text-xs leading-relaxed text-gray-500 whitespace-pre-line bg-gray-50/50" onscroll="handleModalScrollEngine()"> 載入中... </div>
             <div class="p-5 border-t border-gray-100 bg-white">
                 <button type="button" id="modalCloseBtn" disabled onclick="closeTermsModalWindow()" class="w-full bg-gray-200 text-gray-400 p-4 rounded-2xl text-xs font-bold transition-all duration-300 tracking-widest uppercase"> 請向下滑動閱讀完整條款 </button>
@@ -479,7 +479,7 @@
         function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 30) unlockTermsButton(btn); }
         function unlockTermsButton(btn) { btn.disabled = false; btn.innerText = "✓ 本人已詳細閱讀並完全同意以上條款"; btn.className = "w-full bg-[#5c4d43] text-white p-4 rounded-2xl text-xs font-bold shadow-lg text-center cursor-pointer"; }
         
-        // 🌟 【復原與重構核心線】：修正原先 scale95 導致的 JavaScript 執行崩潰，法規解鎖大回歸！
+        // 🌟 核心修復線：完全拔除原先 scale95 造成的錯誤，家長點擊完全解鎖通車！
         function closeTermsModalWindow() {
             let containerEl = document.getElementById('modalContainer');
             if(containerEl) containerEl.classList.add('scale-95'); 
@@ -579,98 +579,86 @@
           return packedPetsArray; 
         }
 
+        // 🌟 革命加值：改為非同步 POST，優化彈窗為您指定的「預約成功！」，並改為跳轉官方 LINE 機制
         function processBooking() {
-  if(!validateFormInputsBeforeSubmit()) return;
+          if(!validateFormInputsBeforeSubmit()) return;
+          const btn = document.getElementById('submitBtn'); 
+          if(btn) { btn.innerText = '正在寫入預約系統...'; btn.disabled = true; }
+          
+          const petsPayload = packDynamicPetsJsonPayload();
+          let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
+          let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+          const sigCanvasObj = document.getElementById('sigCanvas');
+          const lineNameVal = document.getElementById('lineName').value.trim();
 
-  const btn = document.getElementById('submitBtn'); 
-  if(btn) { 
-    btn.innerText = '正在寫入預約系統...'; 
-    btn.disabled = true; 
-  }
-  
-  const petsPayload = packDynamicPetsJsonPayload();
-  let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
-  let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-  const sigCanvasObj = document.getElementById('sigCanvas');
-  const lineNameVal = document.getElementById('lineName').value.trim();
+          let allPhotosPackedMap = {};
+          for (let key in globalPackedPetPhotos) {
+            if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
+          }
 
-  let allPhotosPackedMap = {};
-  for (let key in globalPackedPetPhotos) {
-    if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
-  }
+          const formData = {
+            date: selectedDateStr,
+            time: selectedTimeStr,
+            phone: document.getElementById('phone').value.trim(),
+            lineName: lineNameVal,
+            ownerName: document.getElementById('ownerName').value,
+            email: document.getElementById('email').value.trim(),
+            mainService: mainServicesCombined.join(', '),
+            addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+            price: currentTotal,
+            remark: '前台多寵物數位合約單',
+            contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+            petsJsonString: JSON.stringify(petsPayload),
+            multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
+            signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
+          };
 
-  const formData = {
-    date: selectedDateStr,
-    time: selectedTimeStr,
-    phone: document.getElementById('phone').value.trim(),
-    lineName: lineNameVal,
-    ownerName: document.getElementById('ownerName').value,
-    email: document.getElementById('email').value.trim(),
-    mainService: mainServicesCombined.join(', '),
-    addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-    price: currentTotal,
-    remark: '前台多寵物數位合約單',
-    contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-    petsJsonString: JSON.stringify(petsPayload),
-    multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
-    signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-  };
+          // 🌟 修正：字眼完全改為「送出預約中...」
+          Swal.fire({ title: '送出預約中...', text: '', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
-  // 🌟 修正：字眼改為「送出預約中...」，並移除多餘說明，優化讀取動畫
-  Swal.fire({ 
-    title: '送出預約中...', 
-    text: '', 
-    icon: 'info', 
-    allowOutsideClick: false, 
-    showConfirmButton: false, 
-    didOpen: () => Swal.showLoading() 
-  });
+          let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
 
-  // 0元免扣則數終極引導文字打包
-  let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
-
-  // 🌟 秒級解鎖回傳：改用非同步雙線並行，絕不讓家長卡在網頁上傻等
-  fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify({ action: "submitBooking", payload: formData })
-  }).then(() => {
-    Swal.close();
-    navigator.clipboard.writeText(lineText).then(() => {
-      // 🌟 終極溫柔防呆文字引導：一字不差對齊「預約成功！」
-      Swal.fire({ 
-        title: '預約成功！', 
-        html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
-                 <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
-                 <p class="font-bold">接下來請配合簡單兩步驟：</p>
-                 <p>1️⃣ 點擊下方按鈕，系統會自動複製明細並幫您打開【官方 LINE】。</p>
-                 <p>2️⃣ 進入聊天室後，在輸入對話框<span class="text-rose-500 font-black">【長按 ➡️ 點選貼上】</span>並送出，即可完成快速審核確認喔！❤️</p>
-               </div>`,
-        icon: 'success', 
-        confirmButtonColor: '#8A9A5B',
-        confirmButtonText: '📋 複製明細並前往官方 LINE'
-      }).then(() => { 
-        window.open("https://lin.ee/6A3s756D", '_blank');
-        window.location.reload(); 
-      });
-    });
-  }).catch(err => {
-    Swal.close();
-    navigator.clipboard.writeText(lineText);
-    // 🌟 修正：網絡超時備援彈窗一字不差「預約成功送出！」
-    Swal.fire({ 
-      title: '預約成功送出！', 
-      html: `<p class="text-xs text-gray-500 mb-2">明細已成功複製！請至官方 LINE 對話框【長按貼上】發送給我們確認排程喔！🐾</p>`, 
-      icon: 'success', 
-      confirmButtonColor: '#8A9A5B',
-      confirmButtonText: '前往官方 LINE'
-    }).then(() => { 
-      window.open("https://lin.ee/6A3s756D", '_blank');
-      window.location.reload(); 
-    });
-  });
-}
+          fetch(API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ action: "submitBooking", payload: formData })
+          }).then(() => {
+            Swal.close();
+            navigator.clipboard.writeText(lineText).then(() => {
+              // 🌟 修正彈窗：一字不差對齊「預約成功！」，並給予精準白話指引
+              Swal.fire({ 
+                title: '預約成功！', 
+                html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
+                         <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
+                         <p class="font-bold">接下來請配合簡單兩步驟：</p>
+                         <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
+                         <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對喔！❤️</p>
+                       </div>`,
+                icon: 'success', 
+                confirmButtonColor: '#8A9A5B',
+                confirmButtonText: '📋 複製明細並前往官方 LINE'
+              }).then(() => { 
+                window.open("https://lin.ee/6A3s756D", '_blank');
+                window.location.reload(); 
+              });
+            });
+          }).catch(err => {
+            Swal.close();
+            navigator.clipboard.writeText(lineText);
+            // 🌟 修正彈窗：一字不差對齊「預約成功送出！」
+            Swal.fire({ 
+              title: '預約成功送出！', 
+              html: `<p class="text-xs text-gray-500 mb-2">預約明細已成功複製！請至官方 LINE 對話框【長按並貼上】發送給我們確認排程喔！🐾</p>`, 
+              icon: 'success', 
+              confirmButtonColor: '#8A9A5B',
+              confirmButtonText: '前往官方 LINE'
+            }).then(() => { 
+              window.open("https://lin.ee/6A3s756D", '_blank');
+              window.location.reload(); 
+            });
+          });
+        }
     </script>
 </body>
 </html>
