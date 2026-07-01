@@ -210,7 +210,7 @@
             <i class="far fa-clock mr-1"></i> 營業時間 9:00-18:30
         </div>
 
-        <button id="submitBtn" onclick="processBooking()" class="w-full bg-[#FFEE99] text-[#5C4D43] font-bold py-4 rounded-xl transition duration-300 mb-6 text-sm shadow-md border border-[#E8DFD5] text-center block font-black">
+        <button id="submitBtn" onclick="()" class="w-full bg-[#FFEE99] text-[#5C4D43] font-bold py-4 rounded-xl transition duration-300 mb-6 text-sm shadow-md border border-[#E8DFD5] text-center block font-black">
             送出預約申請 (目前預估總計: $0)
         </button>
 
@@ -580,67 +580,97 @@
         }
 
         function processBooking() {
-          if(!validateFormInputsBeforeSubmit()) return;
-          const btn = document.getElementById('submitBtn'); 
-          if(btn) { btn.innerText = '正在寫入預約系統...'; btn.disabled = true; }
-          
-          const petsPayload = packDynamicPetsJsonPayload();
-          let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
-          let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-          const sigCanvasObj = document.getElementById('sigCanvas');
-          const lineNameVal = document.getElementById('lineName').value.trim();
+  if(!validateFormInputsBeforeSubmit()) return;
 
-          let allPhotosPackedMap = {};
-          for (let key in globalPackedPetPhotos) {
-            if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
-          }
+  const btn = document.getElementById('submitBtn'); 
+  if(btn) { 
+    btn.innerText = '正在寫入預約系統...'; 
+    btn.disabled = true; 
+  }
+  
+  const petsPayload = packDynamicPetsJsonPayload();
+  let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
+  let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+  const sigCanvasObj = document.getElementById('sigCanvas');
+  const lineNameVal = document.getElementById('lineName').value.trim();
 
-          const formData = {
-            date: selectedDateStr,
-            time: selectedTimeStr,
-            phone: document.getElementById('phone').value.trim(),
-            lineName: lineNameVal,
-            ownerName: document.getElementById('ownerName').value,
-            email: document.getElementById('email').value.trim(),
-            mainService: mainServicesCombined.join(', '),
-            addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-            price: currentTotal,
-            remark: '前台多寵物數位合約單',
-            contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-            petsJsonString: JSON.stringify(petsPayload),
-            multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
-            signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-          };
+  let allPhotosPackedMap = {};
+  for (let key in globalPackedPetPhotos) {
+    if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
+  }
 
-          Swal.fire({ title: '同步中...', text: '', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+  const formData = {
+    date: selectedDateStr,
+    time: selectedTimeStr,
+    phone: document.getElementById('phone').value.trim(),
+    lineName: lineNameVal,
+    ownerName: document.getElementById('ownerName').value,
+    email: document.getElementById('email').value.trim(),
+    mainService: mainServicesCombined.join(', '),
+    addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+    price: currentTotal,
+    remark: '前台多寵物數位合約單',
+    contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+    petsJsonString: JSON.stringify(petsPayload),
+    multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
+    signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
+  };
 
-          // 🌟 終極 POST 數據流通訊，徹底摧毀網址過長死鎖
-          fetch(API_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({ action: "submitBooking", payload: formData })
-          }).then(() => {
-            Swal.close();
-            // 🌟 完美帶入：家長姓名與 LINE 名稱完美打包進回條，發送不扣一分錢
-            let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
-            let lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(lineText)}`;
+  // 🌟 修正：字眼改為「送出預約中...」，並移除多餘說明，優化讀取動畫
+  Swal.fire({ 
+    title: '送出預約中...', 
+    text: '', 
+    icon: 'info', 
+    allowOutsideClick: false, 
+    showConfirmButton: false, 
+    didOpen: () => Swal.showLoading() 
+  });
 
-            Swal.fire({ 
-              title: '預約成功！', 
-              html: `<p class="text-xs text-gray-500 mb-2">請點擊下方按鈕，發送確認回條給我們確認喔！❤️</p>`,
-              icon: 'success', 
-              confirmButtonColor: '#8A9A5B',
-              confirmButtonText: '🚀 一鍵發送憑證回條至官方 LINE'
-            }).then(() => { 
-              window.open(lineUrl, '_blank');
-              window.location.reload(); 
-            });
-          }).catch(err => {
-            Swal.close();
-            Swal.fire({ title: '預約成功送出！', text: '', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
-          });
-        }
+  // 0元免扣則數終極引導文字打包
+  let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
+
+  // 🌟 秒級解鎖回傳：改用非同步雙線並行，絕不讓家長卡在網頁上傻等
+  fetch(API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ action: "submitBooking", payload: formData })
+  }).then(() => {
+    Swal.close();
+    navigator.clipboard.writeText(lineText).then(() => {
+      // 🌟 終極溫柔防呆文字引導：一字不差對齊「預約成功！」
+      Swal.fire({ 
+        title: '預約成功！', 
+        html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
+                 <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
+                 <p class="font-bold">接下來請配合簡單兩步驟：</p>
+                 <p>1️⃣ 點擊下方按鈕，系統會自動複製明細並幫您打開【官方 LINE】。</p>
+                 <p>2️⃣ 進入聊天室後，在輸入對話框<span class="text-rose-500 font-black">【長按 ➡️ 點選貼上】</span>並送出，即可完成快速審核確認喔！❤️</p>
+               </div>`,
+        icon: 'success', 
+        confirmButtonColor: '#8A9A5B',
+        confirmButtonText: '📋 複製明細並前往官方 LINE'
+      }).then(() => { 
+        window.open("https://lin.ee/6A3s756D", '_blank');
+        window.location.reload(); 
+      });
+    });
+  }).catch(err => {
+    Swal.close();
+    navigator.clipboard.writeText(lineText);
+    // 🌟 修正：網絡超時備援彈窗一字不差「預約成功送出！」
+    Swal.fire({ 
+      title: '預約成功送出！', 
+      html: `<p class="text-xs text-gray-500 mb-2">明細已成功複製！請至官方 LINE 對話框【長按貼上】發送給我們確認排程喔！🐾</p>`, 
+      icon: 'success', 
+      confirmButtonColor: '#8A9A5B',
+      confirmButtonText: '前往官方 LINE'
+    }).then(() => { 
+      window.open("https://lin.ee/6A3s756D", '_blank');
+      window.location.reload(); 
+    });
+  });
+}
     </script>
 </body>
 </html>
