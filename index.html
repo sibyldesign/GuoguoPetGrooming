@@ -589,14 +589,6 @@ function processBooking() {
   let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
   const sigCanvasObj = document.getElementById('sigCanvas');
 
-  // 🌟 終極修正：將所有動態卡片的真實相片 Base64 完整打包成一個物件
-  let allPhotosPackedMap = {};
-  for (let key in globalPackedPetPhotos) {
-    if (globalPackedPetPhotos[key]) {
-      allPhotosPackedMap[key] = globalPackedPetPhotos[key];
-    }
-  }
-
   const formData = {
     date: selectedDateStr,
     time: selectedTimeStr,
@@ -610,14 +602,12 @@ function processBooking() {
     remark: '前台多寵物數位合約單',
     contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
     petsJsonString: JSON.stringify(petsPayload),
-    // 🌟 改傳全體照片對照表與手寫簽名 Base64
-    multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
     signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
   };
 
   Swal.fire({ 
-    title: '🎉 同步中...', 
-    text: '正在將多寵排程與數位簽章寫入系統總表...', 
+    title: '同步中...', 
+    text: '', 
     icon: 'info', 
     allowOutsideClick: false, 
     showConfirmButton: false, 
@@ -628,12 +618,27 @@ function processBooking() {
   window[callbackName] = function(res) {
     Swal.close();
     if (res && res.success) {
-      Swal.fire({ title: '預約成功！', text: '資料、照片與手寫簽章已完美進入預約總表。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
+      // 🌟 打包預約資料，準備用於自動喚醒 LINE 傳送明細 (0元不扣則數方案)
+      let lineText = `【菓菓寵物】線上預約確認回條\n單號：${res.orderId}\n日期：${selectedDateStr}\n時段：${selectedTimeStr}\n毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
+      let lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(lineText)}`;
+
+      // 🌟 修正：彈窗文字改為「預約成功！」，點擊按鈕直接喚醒 LINE
+      Swal.fire({ 
+        title: '預約成功！', 
+        html: `<p class="text-xs text-gray-500 mb-3">請點擊下方按鈕，一鍵發送預約憑證回條給我們確認喔！❤️</p>`,
+        icon: 'success', 
+        confirmButtonColor: '#8A9A5B',
+        confirmButtonText: '🚀 發送憑證明細至官方 LINE'
+      }).then(() => { 
+        window.open(lineUrl, '_blank');
+        window.location.reload(); 
+      });
     } else {
       Swal.fire('預約失敗', '系統寫入錯誤：' + (res.error || '未知錯誤'), 'error');
       if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
     }
-    document.getElementById(callbackName).remove(); delete window[callbackName];
+    document.getElementById(callbackName).remove(); 
+    delete window[callbackName];
   };
 
   let script = document.createElement('script'); 
@@ -641,7 +646,15 @@ function processBooking() {
   script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
   script.onerror = () => {
     Swal.close(); 
-    Swal.fire({ title: '✅ 預約申請送出！', text: '排程已成功存入試算表，請至後台確認。', icon: 'success', confirmButtonColor: '#8A9A5B' }).then(() => { window.location.reload(); });
+    // 🌟 修正：備援錯誤字眼改為「預約成功送送出！」
+    Swal.fire({ 
+      title: '預約成功送出！', 
+      text: '', 
+      icon: 'success', 
+      confirmButtonColor: '#8A9A5B' 
+    }).then(() => { 
+      window.location.reload(); 
+    });
   };
   document.body.appendChild(script);
 }
