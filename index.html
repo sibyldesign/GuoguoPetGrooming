@@ -110,7 +110,7 @@
                     <select id="multiPetDropdown" onchange="switchSelectedPetInfo(this.value)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-textBrown outline-none"></select>
                 </div>
                 <input type="email" id="email" placeholder="家長電子信箱 (必填)" class="text-input">
-                <input type="text" id="lineName" placeholder="家長 LINE 名稱 (方便我們確認訊息)" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
+                <input type="text" id="lineName" placeholder="家長 LINE 名稱 (方便我們確認訊息) *" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
                 <input type="text" id="ownerName" placeholder="家長姓名" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
             </div>
         </div>
@@ -181,6 +181,7 @@
                     <div id="finalCheckCircle" class="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center text-white text-xs flex-shrink-0 mt-0.5 transition-all"><i class="fa-solid fa-check"></i></div>
                     <span class="text-[11px] leading-relaxed text-gray-500 font-bold"> 本人已詳細閱讀、充分理解並完全同意上述所有契約條款內容。 * </span>
                     <input type="checkbox" id="finalCheck" required class="hidden">
+                    <div class="text-xs font-bold text-textBrown"></div>
                 </div>
 
                 <div class="border border-[#eae5df] rounded-2xl p-5 space-y-3 bg-white">
@@ -348,7 +349,6 @@
         function changeFrontMonth(dir) { calMonth += dir; if(calMonth > 11) { calMonth = 0; calYear++; } if(calMonth < 0) { calMonth = 11; calYear--; } renderFrontCalendar(); }
         function selectDate(dateStr) { selectedDateStr = dateStr; selectedTimeStr = ''; renderFrontCalendar(); const container = document.getElementById('timeSlotContainer'); if(container) container.innerHTML = '<div class="text-sm text-gray-400 text-center py-4">讀取中...</div>'; checkFormReady(); callGasGet('getDailySlots', { dateStr: dateStr }).then(renderTimeSlots).catch(err => { if(container) container.innerHTML = '<div class="text-gray-400 text-center py-4">時段讀取失敗</div>'; }); }
         
-        // 🌟 【時段過濾引擎】：如果是今天，自動比對當下手機時間，隱藏過去的過期時段
         function renderTimeSlots(res) { 
             const container = document.getElementById('timeSlotContainer'); if(!container) return; 
             if(res && res.isClosed) { container.innerHTML = `<div class="text-red-500 font-bold text-center">${res.message}</div>`; return; } 
@@ -356,15 +356,13 @@
             let todayObj = new Date();
             let todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth()+1).padStart(2,'0')}-${String(todayObj.getDate()).padStart(2,'0')}`;
             let currentHour = todayObj.getHours();
-            let currentMin = todayObj.getMinutes();
 
             let html = '<div class="grid grid-cols-3 gap-3">'; 
             if(res && res.availableSlots) { 
                 res.availableSlots.forEach(time => { 
-                    // 如果家長選的是今天，精算並隱藏過期時段 🛡️
                     if(selectedDateStr === todayStr) {
                         let slotHour = parseInt(time.split(':')[0]);
-                        if(slotHour <= currentHour) return; // 過去的鐘點直接跳過不渲染
+                        if(slotHour <= currentHour) return;
                     }
                     html += `<button onclick="selectTime('${time}', this)" class="time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50">${time}</button>`; 
                 });
@@ -372,24 +370,16 @@
             container.innerHTML = html + '</div>'; 
         }
 
-// 🌟 新增：處理時段點擊選取與 UI 高亮切換的引擎
-function selectTime(timeStr, btnEl) {
-  // 1. 紀錄家長選定的時段字串
-  selectedTimeStr = timeStr;
-  
-  // 2. 移除所有時段按鈕的高亮樣式，恢復成預設白底
-  document.querySelectorAll('.time-btn').forEach(btn => {
-    btn.className = "time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50";
-  });
-  
-  // 3. 為當前被點擊的按鈕加上酪梨綠（avocado）的高亮選取樣式
-  if (btnEl) {
-    btnEl.className = "time-btn py-2.5 border border-avocado bg-green-50/60 text-avocado font-black text-[14px] shadow-sm rounded-xl transform scale-102 transition";
-  }
-  
-  // 4. 檢查表單狀態並更新底部的送出預算按鈕
-  checkFormReady();
-}
+        function selectTime(timeStr, btnEl) {
+          selectedTimeStr = timeStr;
+          document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.className = "time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50";
+          });
+          if (btnEl) {
+            btnEl.className = "time-btn py-2.5 border border-avocado bg-green-50/60 text-avocado font-black text-[14px] shadow-sm rounded-xl transform scale-102 transition";
+          }
+          checkFormReady();
+        }
         
         function triggerHistorySearch() {
             const phone = document.getElementById('phone').value.trim(); if(phone.length < 8) return;
@@ -398,7 +388,7 @@ function selectTime(timeStr, btnEl) {
                     document.getElementById('ownerName').value = res.ownerName || ''; document.getElementById('lineName').value = res.lineName || ''; if(res.email) document.getElementById('email').value = res.email || '';
                     cachedCustomerPetsData = res.petList || []; const petDropdown = document.getElementById('multiPetDropdown'); const petBlock = document.getElementById('multiPetSelectBlock');
                     if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
-                        let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位歷史毛孩，請點選帶入 ---</option>`;
+                        let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位毛孩歷史紀錄，請點選帶入 ---</option>`;
                         cachedCustomerPetsData.forEach((pet, index) => { dropdownHtml += `<option value="${index}">歷史名單：${pet.name}</option>`; });
                         dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩</option>`;
                         petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
@@ -409,7 +399,6 @@ function selectTime(timeStr, btnEl) {
             }).catch(err => console.error("查詢失敗", err));
         }
 
-        // 🌟 歷史毛孩選擇連動灌入大腦：姓名、品種、體型、毛質、個性、健康 100% 灌入自填卡片！
         function switchSelectedPetInfo(indexVal) {
             if(indexVal === "" || indexVal === "_CHOOSE_") return;
             const petSelected = cachedCustomerPetsData[parseInt(indexVal)]; if(!petSelected) return;
@@ -464,6 +453,26 @@ function selectTime(timeStr, btnEl) {
             wrapper.appendChild(card); card.querySelectorAll('.addon-checkbox').forEach(cb => { cb.addEventListener('change', recalculatePrice); }); checkFormReady();
         }
 
+        // 🌟 核心補漏：實作每隻毛孩獨立的相片選取讀取引擎，徹底終結死鎖
+        function previewAndPackIndividualPetImage(inputEl, id) {
+            if (inputEl.files && inputEl.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // 1. 將圖片 Base64 壓入多寵照片全域對照表
+                    globalPackedPetPhotos[id] = e.target.result;
+                    
+                    // 2. 開通畫面預覽
+                    const container = document.getElementById(`photoPreviewContainer_${id}`);
+                    const img = document.getElementById(`photoPreviewImg_${id}`);
+                    if(img && container) {
+                        img.src = e.target.result;
+                        container.classList.remove('hidden');
+                    }
+                };
+                reader.readAsDataURL(inputEl.files[0]);
+            }
+        }
+
         function openTermsModalWindow(type) {
             currentTermType = type; const modal = document.getElementById('termsModal'); const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn');
             if(!modal || !body || !btn) return; btn.disabled = true; btn.className = "w-full bg-gray-200 text-gray-400 p-4 rounded-2xl text-xs font-bold text-center cursor-not-allowed uppercase"; btn.innerText = "請向下滑動閱讀完整條款"; body.scrollTop = 0;
@@ -472,9 +481,9 @@ function selectTime(timeStr, btnEl) {
         function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 30) unlockTermsButton(btn); }
         function unlockTermsButton(btn) { btn.disabled = false; btn.innerText = "✓ 本人已詳細閱讀並完全同意以上條款"; btn.className = "w-full bg-[#5c4d43] text-white p-4 rounded-2xl text-xs font-bold shadow-lg text-center cursor-pointer"; }
         function closeTermsModalWindow() {
-            document.getElementById('modalContainer').classList.add('scale-95'); setTimeout(() => document.getElementById('termsModal').classList.add('hidden'), 150);
+            document.getElementById('modalContainer').scale95 ? document.getElementById('modalContainer').classList.add('scale-95') : null; setTimeout(() => document.getElementById('termsModal').classList.add('hidden'), 150);
             if (currentTermType === 'main') { mainRead = true; document.getElementById('badge_main').innerText = "已完成"; document.getElementById('badge_main').className = "text-[10px] bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold w-14 text-center"; }
-            else { riskRead = true; document.getElementById('badge_risk').innerText = "已完成"; document.getElementById('badge_risk').className = "text-[10px] bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold w-14 text-center"; }
+            else { riskRead = true; document.getElementById('badge_risk').innerText = "Ref已完成"; document.getElementById('badge_risk').className = "text-[10px] bg-green-100 text-green-600 px-3 py-1 rounded-full font-bold w-14 text-center"; }
             if (mainRead && riskRead) { document.getElementById('signatureLockCover').classList.add('hidden'); document.getElementById('signatureUnlockBlock').classList.remove('hidden'); setTimeout(initDigitalSignatureCanvasEngine, 150); } checkFormReady();
         }
 
@@ -489,18 +498,14 @@ function selectTime(timeStr, btnEl) {
         function drawStrokeAction(e, cvs, cX) { if (!drawingState) return; const rect = cvs.getBoundingClientRect(); const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0); const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0); const x = clientX - rect.left; const y = clientY - rect.top; cX.lineTo(x, y); cX.stroke(); cX.beginPath(); cX.moveTo(x, y); if(e.touches) e.preventDefault(); checkFormReady(); }
         function clearSignatureCanvasEngine() { const sigCanvasObj = document.getElementById('sigCanvas'); if(!sigCanvasObj) return; const cX = sigCanvasObj.getContext('2d'); cX.clearRect(0, 0, sigCanvasObj.width, sigCanvasObj.height); document.getElementById('sigTextPlaceholder').classList.remove('hidden'); checkFormReady(); }
 
-        // 🌟 【智慧時程加算】：自動去快取數據裡精算所有被選取的項目所需總時間
         function recalculatePrice() {
             let total = 0; let durationTotal = 0;
             const container = document.getElementById('dynamicPetContainer'); if (!container) return;
             for (let i = 0; i < container.children.length; i++) {
                 const cardEl = container.children[i]; const mainSelect = cardEl.querySelector('.p-main-service');
                 if (mainSelect && mainSelect.value !== "") {
-                    // 累加金額
                     const selectedOption = mainSelect.options[mainSelect.selectedIndex];
                     if (selectedOption) total += parseFloat(selectedOption.getAttribute('data-price')) || 0;
-                    
-                    // 累加時間 💎
                     let matchService = allServices.find(s => s.service === mainSelect.value);
                     if(matchService) durationTotal += parseInt(matchService.duration) || 60;
                 }
@@ -512,7 +517,6 @@ function selectTime(timeStr, btnEl) {
 
         function checkFormReady() {
             const btn = document.getElementById('submitBtn'); if(!btn) return;
-            // 連動顯示精估時程與預算金額 💎
             btn.innerText = `送出預約申請 (預估時程: ${currentDurationTotal}分鐘 / 金額: $${currentTotal})`;
         }
 
@@ -521,6 +525,8 @@ function selectTime(timeStr, btnEl) {
             if(!phoneVal || phoneVal.length < 8) { Swal.fire('漏填項目提醒', '❌ 請完整填寫有效的家長聯絡電話！', 'warning'); return false; }
             const emailVal = document.getElementById('email').value.trim();
             if(!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) { Swal.fire('漏填項目提醒', '❌ 請完整填寫正確的電子信箱！', 'warning'); return false; }
+            const lineNameVal = document.getElementById('lineName').value.trim();
+            if(!lineNameVal) { Swal.fire('漏填項目提醒', '❌ 請完整填寫家長 LINE 名稱！', 'warning'); return false; }
             const container = document.getElementById('dynamicPetContainer');
             if(!container || container.children.length === 0) { Swal.fire('漏填項目提醒', '❌ 請至少新增一隻施作毛孩的資料！', 'warning'); return false; }
             for (let i = 0; i < container.children.length; i++) {
@@ -546,126 +552,122 @@ function selectTime(timeStr, btnEl) {
             return true;
         }
 
-        // 1. 確保多寵卡片打包時，將每隻毛孩的 Base64 壓入 JSON 陣列 [cite: 1886]
-function packDynamicPetsJsonPayload() {
-  const container = document.getElementById('dynamicPetContainer'); // [cite: 1887]
-  const packedPetsArray = []; 
-  if(!container) return packedPetsArray; // [cite: 1887]
-  
-  for (let i = 0; i < container.children.length; i++) { // [cite: 1888]
-    const cardEl = container.children[i]; // [cite: 1889]
-    const id = cardEl.id.split('_')[1]; // [cite: 1889]
-    let addonsArr = []; 
-    cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value)); // [cite: 1890]
-    
-    packedPetsArray.push({
-      name: cardEl.querySelector('.p-name').value.trim(), // [cite: 1892]
-      breed: cardEl.querySelector('.p-breed').value.trim(), // [cite: 1892]
-      petSize: cardEl.querySelector('.p-size').value.trim(), // [cite: 1893]
-      coatType: cardEl.querySelector('.p-coat').value.trim(), // [cite: 1893]
-      personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', // [cite: 1894]
-      healthTag: cardEl.querySelector('.p-heal').value.trim() || '無', // [cite: 1894]
-      mainService: cardEl.querySelector('.p-main-service').value, // [cite: 1895]
-      addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無', // [cite: 1895]
-      // 🌟 核心：完整保留每隻毛孩獨立上傳的真實照片 Base64 資料 [cite: 1896]
-      petPhotoBase64: globalPackedPetPhotos[id] || "" // [cite: 1896]
-    });
-  }
-  return packedPetsArray; // [cite: 1899]
-}
+        function packDynamicPetsJsonPayload() {
+          const container = document.getElementById('dynamicPetContainer'); 
+          const packedPetsArray = []; 
+          if(!container) return packedPetsArray; 
+          
+          for (let i = 0; i < container.children.length; i++) { 
+            const cardEl = container.children[i]; 
+            const id = cardEl.id.split('_')[1]; 
+            let addonsArr = []; 
+            cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value)); 
+            
+            packedPetsArray.push({
+              name: cardEl.querySelector('.p-name').value.trim(), 
+              breed: cardEl.querySelector('.p-breed').value.trim(), 
+              petSize: cardEl.querySelector('.p-size').value.trim(), 
+              coatType: cardEl.querySelector('.p-coat').value.trim(), 
+              personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', 
+              healthTag: cardEl.querySelector('.p-heal').value.trim() || '無', 
+              mainService: cardEl.querySelector('.p-main-service').value, 
+              addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無', 
+              petPhotoBase64: globalPackedPetPhotos[id] || "" 
+            });
+          }
+          return packedPetsArray; 
+        }
 
-// 2. 修正送出排程，將多寵照片主體打包進 payload 穿透給大腦 [cite: 1901]
-function processBooking() {
-  if(!validateFormInputsBeforeSubmit()) return;
+        function processBooking() {
+          if(!validateFormInputsBeforeSubmit()) return;
 
-  const btn = document.getElementById('submitBtn'); 
-  if(btn) { 
-    btn.innerText = '正在寫入預約系統...'; 
-    btn.disabled = true; 
-  }
-  
-  const petsPayload = packDynamicPetsJsonPayload();
-  let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
-  let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-  const sigCanvasObj = document.getElementById('sigCanvas');
+          const btn = document.getElementById('submitBtn'); 
+          if(btn) { 
+            btn.innerText = '正在寫入預約系統...'; 
+            btn.disabled = true; 
+          }
+          
+          const petsPayload = packDynamicPetsJsonPayload();
+          let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
+          let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+          const sigCanvasObj = document.getElementById('sigCanvas');
+          const lineNameVal = document.getElementById('lineName').value.trim();
 
-  let allPhotosPackedMap = {};
-  for (let key in globalPackedPetPhotos) {
-    if (globalPackedPetPhotos[key]) {
-      allPhotosPackedMap[key] = globalPackedPetPhotos[key];
-    }
-  }
+          let allPhotosPackedMap = {};
+          for (let key in globalPackedPetPhotos) {
+            if (globalPackedPetPhotos[key]) {
+              allPhotosPackedMap[key] = globalPackedPetPhotos[key];
+            }
+          }
 
-  const formData = {
-    date: selectedDateStr,
-    time: selectedTimeStr,
-    phone: document.getElementById('phone').value.trim(),
-    lineName: document.getElementById('lineName').value,
-    ownerName: document.getElementById('ownerName').value,
-    email: document.getElementById('email').value.trim(),
-    mainService: mainServicesCombined.join(', '),
-    addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-    price: currentTotal,
-    remark: '前台多寵物數位合約單',
-    contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-    petsJsonString: JSON.stringify(petsPayload),
-    multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
-    signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-  };
+          const formData = {
+            date: selectedDateStr,
+            time: selectedTimeStr,
+            phone: document.getElementById('phone').value.trim(),
+            lineName: lineNameVal,
+            ownerName: document.getElementById('ownerName').value,
+            email: document.getElementById('email').value.trim(),
+            mainService: mainServicesCombined.join(', '),
+            addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+            price: currentTotal,
+            remark: '前台多寵物數位合約單',
+            contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+            petsJsonString: JSON.stringify(petsPayload),
+            multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
+            signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
+          };
 
-  Swal.fire({ 
-    title: '同步中...', 
-    text: '', 
-    icon: 'info', 
-    allowOutsideClick: false, 
-    showConfirmButton: false, 
-    didOpen: () => Swal.showLoading() 
-  });
+          Swal.fire({ 
+            title: '同步中...', 
+            text: '', 
+            icon: 'info', 
+            allowOutsideClick: false, 
+            showConfirmButton: false, 
+            didOpen: () => Swal.showLoading() 
+          });
 
-  let callbackName = 'submitCallback_' + Math.round(100000 * Math.random());
-  window[callbackName] = function(res) {
-    Swal.close();
-    if (res && res.success) {
-      // 🌟 打包預約成功文字，一鍵呼叫發送至官方 LINE Chat 視窗 (0元免扣額方案)
-      let lineText = `【菓菓寵物】線上預約確認回條\n單號：${res.orderId}\n日期：${selectedDateStr}\n時段：${selectedTimeStr}\n毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
-      let lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(lineText)}`;
+          let callbackName = 'submitCallback_' + Math.round(100000 * Math.random());
+          window[callbackName] = function(res) {
+            Swal.close();
+            if (res && res.success) {
+              // 🌟 終極升級：自動帶入家長的 LINE 名稱進入推播明細，打通0元免扣款機制
+              let lineText = `【菓菓寵物】線上預約確認回條\n單號：${res.orderId}\n家長：${formData.ownerName}\nLINE名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
+              let lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(lineText)}`;
 
-      // 🌟 修正：彈窗文字精煉，一字不差「預約成功！」
-      Swal.fire({ 
-        title: '預約成功！', 
-        html: `<p class="text-xs text-gray-500 mb-2">請點擊下方按鈕，發送確認回條給我們確認喔！❤️</p>`,
-        icon: 'success', 
-        confirmButtonColor: '#8A9A5B',
-        confirmButtonText: '🚀 一鍵發送憑證回條至官方 LINE'
-      }).then(() => { 
-        window.open(lineUrl, '_blank');
-        window.location.reload(); 
-      });
-    } else {
-      Swal.fire('預約失敗', '寫入系統錯誤：' + (res.error || '未知錯誤'), 'error');
-      if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
-    }
-    document.getElementById(callbackName).remove(); 
-    delete window[callbackName];
-  };
+              Swal.fire({ 
+                title: '預約成功！', 
+                html: `<p class="text-xs text-gray-500 mb-2">請點擊下方按鈕，發送確認回條給我們確認喔！❤️</p>`,
+                icon: 'success', 
+                confirmButtonColor: '#8A9A5B',
+                confirmButtonText: '🚀 一鍵發送憑證回條至官方 LINE'
+              }).then(() => { 
+                window.open(lineUrl, '_blank');
+                window.location.reload(); 
+              });
+            } else {
+              Swal.fire('預約失敗', '寫入系統錯誤：' + (res.error || '未知錯誤'), 'error');
+              if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
+            }
+            document.getElementById(callbackName).remove(); 
+            delete window[callbackName];
+          };
 
-  let script = document.createElement('script'); 
-  script.id = callbackName;
-  script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
-  script.onerror = () => {
-    Swal.close(); 
-    // 🌟 修正：非同步網絡超時備援彈窗一字不差「預約成功送出！」
-    Swal.fire({ 
-      title: '預約成功送出！', 
-      text: '', 
-      icon: 'success', 
-      confirmButtonColor: '#8A9A5B' 
-    }).then(() => { 
-      window.location.reload(); 
-    });
-  };
-  document.body.appendChild(script);
-}
+          let script = document.createElement('script'); 
+          script.id = callbackName;
+          script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
+          script.onerror = () => {
+            Swal.close(); 
+            Swal.fire({ 
+              title: '預約成功送出！', 
+              text: '', 
+              icon: 'success', 
+              confirmButtonColor: '#8A9A5B' 
+            }).then(() => { 
+              window.location.reload(); 
+            });
+          };
+          document.body.appendChild(script);
+        }
     </script>
 </body>
 </html>
