@@ -589,7 +589,6 @@ function processBooking() {
   let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
   const sigCanvasObj = document.getElementById('sigCanvas');
 
-  // 打包全體毛孩照片
   let allPhotosPackedMap = {};
   for (let key in globalPackedPetPhotos) {
     if (globalPackedPetPhotos[key]) {
@@ -627,17 +626,17 @@ function processBooking() {
   window[callbackName] = function(res) {
     Swal.close();
     if (res && res.success) {
-      // 打包預約確認文字並自動喚醒 LINE (0元不扣則數)
-      let lineText = `【菓菓寵物】預約成功確認回條\n單號：${res.orderId}\n日期：${selectedDateStr}\n時段：${selectedTimeStr}\n毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
+      // 🌟 喚醒 LINE 的 0元免扣則數方案
+      let lineText = `【菓菓寵物】線上預約確認回條\n單號：${res.orderId}\n日期：${selectedDateStr}\n時段：${selectedTimeStr}\n毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
       let lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(lineText)}`;
 
       // 🌟 修正彈窗：不要多餘敘述，一字不差「預約成功！」
       Swal.fire({ 
         title: '預約成功！', 
-        html: `<p class="text-xs text-gray-500 mb-2">請點擊下方按鈕，發送預約憑證回條給我們確認喔！❤️</p>`,
+        html: `<p class="text-xs text-gray-500 mb-2">請點擊下方按鈕，一鍵發送預約明細至官方 LINE 存查喔！❤️</p>`,
         icon: 'success', 
         confirmButtonColor: '#8A9A5B',
-        confirmButtonText: '🚀 前往官方 LINE 發送憑證'
+        confirmButtonText: '🚀 一鍵發送明細至官方 LINE'
       }).then(() => { 
         window.open(lineUrl, '_blank');
         window.location.reload(); 
@@ -646,8 +645,7 @@ function processBooking() {
       Swal.fire('預約失敗', '寫入錯誤：' + (res.error || '未知錯誤'), 'error');
       if(btn) { btn.innerText = '送出預約申請'; btn.disabled = false; }
     }
-    document.getElementById(callbackName).remove(); 
-    delete window[callbackName];
+    document.getElementById(callbackName).remove(); delete window[callbackName];
   };
 
   let script = document.createElement('script'); 
@@ -655,7 +653,7 @@ function processBooking() {
   script.src = `${API_URL}?action=submitBookingVia穿透JSONP&payload=${encodeURIComponent(JSON.stringify(formData))}&callback=${callbackName}`;
   script.onerror = () => {
     Swal.close(); 
-    // 🌟 修正：備援錯誤彈窗文字一字不差「預約成功送出！」
+    // 🌟 修正：備援非同步回傳字眼一字不差「預約成功送出！」
     Swal.fire({ 
       title: '預約成功送出！', 
       text: '', 
