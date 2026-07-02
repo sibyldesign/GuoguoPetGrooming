@@ -574,7 +574,7 @@
           return packedPetsArray; 
         }
 
-        // 🌟 完全體加固優化版：前台送出不再傻傻等待無信號的 no-cors，1.5 秒精準解鎖彈窗！
+        // 🌟 完全體加固優化版：前台送出不卡死、1.5秒內即刻解鎖「預約成功！」大彈窗
         function processBooking() {
           if(!validateFormInputsBeforeSubmit()) return;
           const btn = document.getElementById('submitBtn'); 
@@ -608,12 +608,12 @@
             signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
           };
 
-          // 畫面顯示正在處理中
-          Swal.fire({ title: '送出預約中...', text: '正在排編雲端大腦，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+          // 畫面轉圈圈引導
+          Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
           let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
 
-          // 核心修復：發射請求
+          // 異步秒級派發，不卡執行緒
           fetch(API_URL, {
             method: "POST",
             mode: "no-cors",
@@ -621,7 +621,7 @@
             body: JSON.stringify({ action: "submitBooking", payload: formData })
           });
 
-          // 🌟 萬用黃金防鎖機制：不再等待無回應的 no-cors，1.5秒後直接認定發射成功並主動跳出彈窗！
+          // 🌟 1.5秒黃金計時器：立刻回彈成功，100% 打破網頁轉圈轉到天荒地老的死結！
           setTimeout(() => {
             Swal.close();
             navigator.clipboard.writeText(lineText).then(() => {
@@ -645,21 +645,23 @@
         }
     </script>
 
+    <!-- 🌟 精緻小巧化臨櫃補簽卡片 (與預約按鈕拉開安全間距，手機端防擁擠) -->
     <div class="max-w-md mx-auto px-4 pb-4 mt-12">
-        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-3.5 text-center shadow-sm max-w-[85%] mx-auto scale-95">
-            <h4 class="text-[11px] font-black text-[#5C4D43] mb-0.5">
+        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[85%] mx-auto scale-95">
+            <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
                 <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專區
             </h4>
-            <p class="text-[9px] text-gray-400 mb-1.5">代客建檔之家長由此進入完成數位簽署</p>
+            <p class="text-[10px] text-gray-400 mb-2.5">現場由美容師代客建檔之家長，請由此進入完成數位合約簽署</p>
             
             <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature" 
                target="_blank" 
-               class="w-full bg-[#8A9A5B]/90 text-white py-1.5 rounded-lg text-[10px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
+               class="w-full bg-[#8A9A5B]/90 text-white py-2 rounded-xl text-[11px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
                ⚡ 點此補簽數位合約
             </a>
         </div>
     </div>
 
+    <!-- 🌟 全網頁唯一且最底部的精緻頁尾坐落 -->
     <div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
         Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
     </div>
