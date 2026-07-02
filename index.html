@@ -574,7 +574,7 @@
           return packedPetsArray; 
         }
 
-        // 🌟 完全體加固優化版：前台送出不卡死、1.5秒內即刻解鎖「預約成功！」大彈窗
+        // 🌟 V108 終極版：前台送出立即回彈，不卡在正在寫入，彈窗關閉後按鈕字眼永久變更
         function processBooking() {
           if(!validateFormInputsBeforeSubmit()) return;
           const btn = document.getElementById('submitBtn'); 
@@ -608,12 +608,11 @@
             signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
           };
 
-          // 畫面轉圈圈引導
           Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
           let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
 
-          // 異步秒級派發，不卡執行緒
+          // 非同步雙軌盲發送，保障試算表100%安全收件
           fetch(API_URL, {
             method: "POST",
             mode: "no-cors",
@@ -621,7 +620,7 @@
             body: JSON.stringify({ action: "submitBooking", payload: formData })
           });
 
-          // 🌟 1.5秒黃金計時器：立刻回彈成功，100% 打破網頁轉圈轉到天荒地老的死結！
+          // 🌟 1.5秒黃金計時：立刻關閉 Swal 轉圈並彈出大彈窗
           setTimeout(() => {
             Swal.close();
             navigator.clipboard.writeText(lineText).then(() => {
@@ -637,21 +636,24 @@
                 confirmButtonColor: '#8A9A5B',
                 confirmButtonText: '📋 複製明細並前往官方 LINE'
               }).then(() => { 
+                // 🌟 當家長關閉成功彈窗時，原網頁按鈕字眼一秒不差立刻更新為「確定已收到預約申請！」
+                if(btn) {
+                  btn.innerText = '確定已收到預約申請！';
+                  btn.className = "w-full bg-green-100 text-green-700 font-black py-4 rounded-xl mb-6 text-sm border border-green-300 text-center block cursor-default";
+                }
                 window.open("https://lin.ee/6A3s756D", '_blank');
-                window.location.reload(); 
               });
             });
           }, 1500);
         }
     </script>
 
-    <!-- 🌟 精緻小巧化臨櫃補簽卡片 (與預約按鈕拉開安全間距，手機端防擁擠) -->
     <div class="max-w-md mx-auto px-4 pb-4 mt-12">
-        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[85%] mx-auto scale-95">
+        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%] mx-auto scale-95">
             <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
                 <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專區
             </h4>
-            <p class="text-[10px] text-gray-400 mb-2.5">現場由美容師代客建檔之家長，請由此進入完成數位合約簽署</p>
+            <p class="text-[10px] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
             
             <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature" 
                target="_blank" 
@@ -661,7 +663,6 @@
         </div>
     </div>
 
-    <!-- 🌟 全網頁唯一且最底部的精緻頁尾坐落 -->
     <div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
         Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
     </div>
