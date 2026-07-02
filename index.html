@@ -641,7 +641,7 @@
           }).catch(err => {
             Swal.close();
             navigator.clipboard.writeText(lineText);
-            // 🌟 修正彈窗一字不差對齊「預約成功送出！」
+            // 🌟 修正彈窗：一字不差對齊「預約 成功送出！」
             Swal.fire({ 
               title: '預約成功送出！', 
               html: `<p class="text-xs text-gray-500 mb-2">預約明細已成功複製！請至官方 LINE 對話框【長按並貼上】發送給我們確認排程喔！🐾</p>`, 
