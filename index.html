@@ -574,7 +574,7 @@
           return packedPetsArray; 
         }
 
-        // 🌟 革命加值：改為非同步 POST，優化彈窗為您指定的「預約成功！」，並改為跳轉官方 LINE 機制
+        // 🌟 完全體加固優化版：前台送出不再傻傻等待無信號的 no-cors，1.5 秒精準解鎖彈窗！
         function processBooking() {
           if(!validateFormInputsBeforeSubmit()) return;
           const btn = document.getElementById('submitBtn'); 
@@ -608,20 +608,23 @@
             signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
           };
 
-          // 🌟 修正：字眼完全改為「送出預約中...」
-          Swal.fire({ title: '送出預約中...', text: '', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+          // 畫面顯示正在處理中
+          Swal.fire({ title: '送出預約中...', text: '正在排編雲端大腦，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
           let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
 
+          // 核心修復：發射請求
           fetch(API_URL, {
             method: "POST",
             mode: "no-cors",
             headers: { "Content-Type": "text/plain" },
             body: JSON.stringify({ action: "submitBooking", payload: formData })
-          }).then(() => {
+          });
+
+          // 🌟 萬用黃金防鎖機制：不再等待無回應的 no-cors，1.5秒後直接認定發射成功並主動跳出彈窗！
+          setTimeout(() => {
             Swal.close();
             navigator.clipboard.writeText(lineText).then(() => {
-              // 🌟 修正彈窗：一字不差對齊「預約成功！」，並給予精準白話指引
               Swal.fire({ 
                 title: '預約成功！', 
                 html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
@@ -638,40 +641,28 @@
                 window.location.reload(); 
               });
             });
-          }).catch(err => {
-            Swal.close();
-            navigator.clipboard.writeText(lineText);
-            // 🌟 修正彈窗：一字不差對齊「預約 成功送出！」
-            Swal.fire({ 
-              title: '預約成功送出！', 
-              html: `<p class="text-xs text-gray-500 mb-2">預約明細已成功複製！請至官方 LINE 對話框【長按並貼上】發送給我們確認排程喔！🐾</p>`, 
-              icon: 'success', 
-              confirmButtonColor: '#8A9A5B',
-              confirmButtonText: '前往官方 LINE'
-            }).then(() => { 
-              window.open("https://lin.ee/6A3s756D", '_blank');
-              window.location.reload(); 
-            });
-          });
+          }, 1500);
         }
-    </script> <div class="max-w-md mx-auto px-4 pb-4 mt-12">
-    <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%] mx-auto scale-95">
-      <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
-        <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專區
-      </h4>
-      <p class="text-[10px] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
-      
-      <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature" 
-         target="_blank" 
-         class="w-full bg-[#8A9A5B]/90 text-white py-2 rounded-xl text-[11px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
-         ⚡ 點此補簽數位合約
-      </a>
-    </div>
-  </div>
+    </script>
 
-  <div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
-      Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
-  </div>
+    <div class="max-w-md mx-auto px-4 pb-4 mt-12">
+        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-3.5 text-center shadow-sm max-w-[85%] mx-auto scale-95">
+            <h4 class="text-[11px] font-black text-[#5C4D43] mb-0.5">
+                <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專區
+            </h4>
+            <p class="text-[9px] text-gray-400 mb-1.5">代客建檔之家長由此進入完成數位簽署</p>
+            
+            <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature" 
+               target="_blank" 
+               class="w-full bg-[#8A9A5B]/90 text-white py-1.5 rounded-lg text-[10px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
+               ⚡ 點此補簽數位合約
+            </a>
+        </div>
+    </div>
+
+    <div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
+        Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
+    </div>
 
 </body>
 </html>
