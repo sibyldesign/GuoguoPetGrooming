@@ -576,96 +576,101 @@
 
         // 🌟 V108 終極版：前台送出立即回彈，不卡在正在寫入，彈窗關閉後按鈕字眼永久變更
         function processBooking() {
-          if(!validateFormInputsBeforeSubmit()) return;
-          const btn = document.getElementById('submitBtn'); 
-          if(btn) { btn.innerText = '正在寫入預約系統...'; btn.disabled = true; }
-          
-          const petsPayload = packDynamicPetsJsonPayload();
-          let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
-          let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-          const sigCanvasObj = document.getElementById('sigCanvas');
-          const lineNameVal = document.getElementById('lineName').value.trim();
+    if(!validateFormInputsBeforeSubmit()) return;
+    const btn = document.getElementById('submitBtn');
+    if(btn) { btn.innerText = '正在寫入預約系統...'; btn.disabled = true; }
 
-          let allPhotosPackedMap = {};
-          for (let key in globalPackedPetPhotos) {
-            if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
-          }
+    const petsPayload = packDynamicPetsJsonPayload();
+    let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
+    let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+    const sigCanvasObj = document.getElementById('sigCanvas');
+    const lineNameVal = document.getElementById('lineName').value.trim();
 
-          const formData = {
-            date: selectedDateStr,
-            time: selectedTimeStr,
-            phone: document.getElementById('phone').value.trim(),
-            lineName: lineNameVal,
-            ownerName: document.getElementById('ownerName').value,
-            email: document.getElementById('email').value.trim(),
-            mainService: mainServicesCombined.join(', '),
-            addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-            price: currentTotal,
-            remark: '前台多寵物數位合約單',
-            contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-            petsJsonString: JSON.stringify(petsPayload),
-            multiPhotosJson: JSON.stringify(allPhotosPackedMap), 
-            signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-          };
+    let allPhotosPackedMap = {};
+    for (let key in globalPackedPetPhotos) {
+        if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
+    }
 
-          Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+    const formData = {
+        date: selectedDateStr,
+        time: selectedTimeStr,
+        phone: document.getElementById('phone').value.trim(),
+        lineName: lineNameVal,
+        ownerName: document.getElementById('ownerName').value,
+        email: document.getElementById('email').value.trim(),
+        mainService: mainServicesCombined.join(', '),
+        addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+        price: currentTotal,
+        remark: '前台多寵物數位合約單',
+        contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+        petsJsonString: JSON.stringify(petsPayload),
+        multiPhotosJson: JSON.stringify(allPhotosPackedMap),
+        signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
+    };
 
-          let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
+    Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
-          // 非同步雙軌盲發送，保障試算表100%安全收件
-          fetch(API_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({ action: "submitBooking", payload: formData })
-          });
+    let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
 
-          // 🌟 1.5秒黃金計時：立刻關閉 Swal 轉圈並彈出大彈窗
-          setTimeout(() => {
-            Swal.close();
-            navigator.clipboard.writeText(lineText).then(() => {
-              Swal.fire({ 
-                title: '預約成功！', 
-                html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
-                         <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
-                         <p class="font-bold">接下來請配合簡單兩步驟：</p>
-                         <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
-                         <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對喔！❤️</p>
-                       </div>`,
-                icon: 'success', 
-                confirmButtonColor: '#8A9A5B',
-                confirmButtonText: '📋 複製明細並前往官方 LINE'
-              }).then(() => { 
-                // 🌟 當家長關閉成功彈窗時，原網頁按鈕字眼一秒不差立刻更新為「確定已收到預約申請！」
+    // 非同步雙軌盲發送，保障試算表100%安全收件
+    fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ action: "submitBooking", payload: formData })
+    });
+
+    // 🌟 1.5秒黃金計時：關閉轉圈，先顯示成功彈窗
+    setTimeout(() => {
+        Swal.close();
+        Swal.fire({
+            title: '預約成功！',
+            html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
+            <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
+            <p class="font-bold">接下來請配合簡單兩步驟：</p>
+            <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
+            <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對喔！❤️</p>
+            </div>`,
+            icon: 'success',
+            confirmButtonColor: '#8A9A5B',
+            confirmButtonText: '📋 複製明細並前往官方 LINE',
+            allowOutsideClick: false // 強迫客人必須點擊按鈕
+        }).then((result) => {
+            // 🌟 點擊按鈕後，才執行複製與跳轉 (這時有了真實點擊，瀏覽器絕對不會擋)
+            if (result.isConfirmed) {
+                navigator.clipboard.writeText(lineText).catch(err => console.log('複製略過', err));
+                
+                // 更新原網頁按鈕狀態
                 if(btn) {
-                  btn.innerText = '確定已收到預約申請！';
-                  btn.className = "w-full bg-green-100 text-green-700 font-black py-4 rounded-xl mb-6 text-sm border border-green-300 text-center block cursor-default";
+                    btn.innerText = '確定已收到預約申請！';
+                    btn.className = "w-full bg-green-100 text-green-700 font-black py-4 rounded-xl mb-6 text-sm border border-green-300 text-center block cursor-default";
                 }
+                // 跳轉至官方 LINE
                 window.open("https://lin.ee/6A3s756D", '_blank');
-              });
-            });
-          }, 1500);
-        }
-    </script>
+            }
+        });
+    }, 1500);
+}
+</script>
 
-    <div class="max-w-md mx-auto px-4 pb-4 mt-12">
-        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%] mx-auto scale-95">
-            <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
-                <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專區
-            </h4>
-            <p class="text-[10px] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
-            
-            <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature" 
-               target="_blank" 
-               class="w-full bg-[#8A9A5B]/90 text-white py-2 rounded-xl text-[11px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
-               ⚡ 點此補簽數位合約
-            </a>
-        </div>
-    </div>
+<div class="max-w-md mx-auto px-4 pb-4 mt-12">
+    <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%] mx-auto scale-95">
+        <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
+            <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專區
+        </h4>
+        <p class="text-[10px] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
 
-    <div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
-        Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
+        <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature"
+        target="_blank"
+        class="w-full bg-[#8A9A5B]/90 text-white py-2 rounded-xl text-[11px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
+        ⚡ 點此補簽數位合約
+        </a>
     </div>
+</div>
+
+<div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
+    Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
+</div>
 
 </body>
 </html>
