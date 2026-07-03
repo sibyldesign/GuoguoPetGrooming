@@ -40,13 +40,13 @@
             margin: 0; 
             padding: 0; 
         }
-        .app-card { background: white; border-radius: 16px; shadow-sm; position: relative; overflow: hidden; }
+        .app-card { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
         .option-card { background-color: #FFFFFF; border: 1.5px solid #E8DFD5; transition: all 0.2s ease-in-out; }
         .hidden-radio:checked + .option-card { border-color: #FFEE99; background-color: #FFFFF0; }
         .text-input { width: 100%; padding: 12px; background: white; border: 1px solid #E8DFD5; border-radius: 12px; font-size: 14px; outline: none; transition: all 0.2s; display: block; box-sizing: border-box; }
         .text-input:focus { border-color: #8A9A5B; }
         .pill-btn { border: 1.5px solid #E8DFD5; padding: 12px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; background: white; color: #5C4D43; cursor: pointer; transition: all 0.2s; width: 100%; display: block; }
-        .pill-btn.active { border-color: #8A9A5B; background-color: #F0F4E8; color: #8A9A5B; }
+        .pill-btn.active { border: 1.5px solid #8A9A5B; background-color: #F0F4E8; color: #8A9A5B; }
         .addon-checkbox { width: 16px; height: 16px; cursor: pointer; }
     </style>
 </head>
@@ -109,7 +109,6 @@
                     <label class="text-[11px] font-black text-avocado block mb-1.5">💡 系統查到您有多位毛孩歷史紀錄：</label>
                     <select id="multiPetDropdown" onchange="switchSelectedPetInfo(this.value)" class="w-full p-2.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-textBrown outline-none"></select>
                 </div>
-                <!-- 🌟 修正：補充家長提示文字，指明自動寄送契約副本 -->
                 <input type="email" id="email" placeholder="家長電子信箱 (必填，將自動寄送契約副本審閱留存憑證)" class="text-input text-xs">
                 <input type="text" id="lineName" placeholder="家長 LINE 名稱 (方便我們找到您) *" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
                 <input type="text" id="ownerName" placeholder="家長姓名" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-accentYellow outline-none transition text-sm">
@@ -239,6 +238,11 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec";
 
+        // 全域核心變數
+        let currentOffDatesList = []; 
+        let globalData = { allRecords: [] };
+        let cachedSlotsMatrixDictionary = {}; 
+
         let allPhotos = []; let allServices = []; let selectedDateStr = ''; let selectedTimeStr = ''; let currentTotal = 0; let currentDurationTotal = 0;
         let currentCalDate = new Date(), calYear = currentCalDate.getFullYear(), calMonth = currentCalDate.getMonth();
         let mainRead = false, riskRead = false, currentTermType = 'main', isCheckedFinal = false, drawingState = false;
@@ -262,7 +266,32 @@
         }
 
         function initPage() { renderFrontCalendar(); loadAnnouncement(); loadCloudContracts(); loadPortfolio(); loadServices(); }
-        function loadCloudContracts() { callGasGet('getSystemContractSettings').then(res => { if(res) { cachedContracts = res; if(res.sliderPhotos && res.sliderPhotos.length > 0) buildDynamicSliderModule(res.sliderPhotos); } }).catch(err => console.error(err)); }
+        
+        function loadCloudContracts() { 
+            callGasGet('getSystemContractSettings').then(res => { 
+                if(res) { 
+                    cachedContracts = res; 
+                    if(res.sliderPhotos && res.sliderPhotos.length > 0) buildDynamicSliderModule(res.sliderPhotos); 
+                    
+                    if(res.offDates) currentOffDatesList = res.offDates;
+                    if(res.allRecords) globalData.allRecords = res.allRecords;
+                    
+                    renderFrontCalendar();
+                    preloadCurrentMonthSlotsMatrix();
+                } 
+            }).catch(err => console.error(err)); 
+        }
+
+        function preloadCurrentMonthSlotsMatrix() {
+            let numDays = new Date(calYear, calMonth + 1, 0).getDate();
+            for(let day=1; day<=numDays; day++) {
+                let dateString = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                callGasGet('getDailySlots', { dateStr: dateString }).then(res => {
+                    if(res) cachedSlotsMatrixDictionary[dateString] = res;
+                }).catch(e => console.log('靜態預載略過', e));
+            }
+        }
+        
         function loadAnnouncement() { callGasGet('getAnnouncementData').then(text => { if(text) document.getElementById('announcement').innerHTML = text; }).catch(err => console.error(err)); }
         
         function loadPortfolio() {
@@ -280,6 +309,14 @@
                     renderGrid('全部'); 
                 } 
             }).catch(err => console.error(err));
+        }
+
+        function filterPhotos(cat, btn) {
+            document.querySelectorAll('.portfolio-btn').forEach(b => {
+                b.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full text-[12px] font-bold border border-gray-200 text-textBrown bg-white";
+            });
+            btn.className = "portfolio-btn whitespace-nowrap px-4 py-1.5 rounded-full text-[12px] font-bold bg-textBrown text-white shadow-sm";
+            renderGrid(cat);
         }
 
         function loadServices() { callGasGet('getServiceSettings').then(data => { allServices = Array.isArray(data) ? data : []; unlockPetEngineButton(); if(petCount === 0) appendNewPetFormCard(); }).catch(err => { allServices = []; unlockPetEngineButton(); if(petCount === 0) appendNewPetFormCard(); }); }
@@ -306,7 +343,7 @@
         }
 
         function openImageLightboxPortal(src) { const modal = document.getElementById('imageLightboxModal'); const img = document.getElementById('lightboxTargetImg'); if(!modal || !img) return; img.src = src; modal.classList.remove('hidden'); modal.classList.add('flex'); setTimeout(() => { modal.classList.add('opacity-100'); }, 50); }
-        function closeImageLightboxPortal() { const modal = document.getElementById('imageLightboxModal'); if(!modal) return; modal.className = "fixed inset-0 bg-black/80 z-[10000] flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300 cursor-zoom-out opacity-0"; setTimeout(() => { modal.classList.remove('flex'); modal.classList.add('hidden'); }, 300); }
+        function closeImageLightboxPortal() { const modal = document.getElementById('imageLightboxModal'); if(!modal) return; modal.style.opacity = "0"; setTimeout(() => { modal.classList.remove('flex'); modal.classList.add('hidden'); }, 300); }
 
         function buildDynamicSliderModule(photoUrls) {
             const container = document.getElementById('sliderImagesContainer'); const dotsContainer = document.getElementById('sliderDotsContainer'); if(!container || !dotsContainer) return;
@@ -324,29 +361,83 @@
             for(let i=0; i<totalSliderImagesCount; i++) { const dot = document.getElementById(`sliderDot_${i}`); if(dot) dot.className = `w-2.5 h-2.5 rounded-full bg-gray-300 transition-colors duration-300 ${i===currentSliderIndex?'!bg-avocado':''}`; }
         }
 
+        // 🌟 終極修正：將已過期、預約客滿與真公休邏輯完美切分
         function renderFrontCalendar() {
             const monthTitle = document.getElementById('cal_year_month'); if(!monthTitle) return; monthTitle.innerText = `${calYear} 年 ${calMonth + 1} 月`;
             const grid = document.getElementById('frontCalGrid'); if(!grid) return; grid.innerHTML = '';
             const firstDay = new Date(calYear, calMonth, 1).getDay(); const numDays = new Date(calYear, calMonth + 1, 0).getDate();
             let today = new Date(); today.setHours(0,0,0,0); let html = '';
-            for(let i=0; i<firstDay; i++) html += `<div class="py-2"></div>`;
+            
+            for(let i=0; i<firstDay; i++) html += `<div class="py-3"></div>`;
+            
             for(let day=1; day<=numDays; day++) {
-                let cellDate = new Date(calYear, calMonth, day); let dateString = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                if(cellDate < today) html += `<div class="py-2 text-gray-300 font-normal cursor-not-allowed text-center">${day}</div>`;
-                else {
-                    if(dateString === selectedDateStr) html += `<div class="py-2 bg-calActive text-white rounded-lg shadow-sm cursor-pointer transform scale-105 transition text-center" onclick="selectDate('${dateString}')">${day}</div>`;
-                    else html += `<div class="py-2 cursor-pointer hover:bg-gray-50 rounded-lg transition text-textBrown text-center" onclick="selectDate('${dateString}')">${day}</div>`;
+                let cellDate = new Date(calYear, calMonth, day); 
+                let dateString = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                
+                const isPast = cellDate < today;
+                
+                // 1. 比對試算表設定的公休日
+                let isClosedDay = false;
+                if (currentOffDatesList && currentOffDatesList.includes(dateString)) isClosedDay = true;
+                
+                // 2. 判斷預約是否全滿
+                let isFullDay = false;
+                if (globalData && globalData.allRecords) {
+                    let bookedCount = globalData.allRecords.filter(r => r && r.date === dateString && r.status !== '已取消' && r.status !== '婉拒').length;
+                    if (bookedCount >= 9) isFullDay = true;
+                }
+
+                // 🌟 【重大視覺邏輯修正】：精準分開公休與過期/額滿
+                if (isPast || isFullDay) {
+                    if (dateString === selectedDateStr) { selectedDateStr = ''; }
+                    // 過期或客滿日期：僅變淺灰色，絕對不顯示「公休」小字
+                    html += `<div class="py-3 text-gray-300 font-normal opacity-40 cursor-not-allowed text-center text-[15px] select-none">${day}</div>`;
+                } else if (isClosedDay) {
+                    if (dateString === selectedDateStr) { selectedDateStr = ''; }
+                    // 真正的公休日：變淡色，並且下方加上細緻的『公休』灰色小字
+                    html += `<div class="py-1 text-gray-300 font-normal opacity-40 cursor-not-allowed text-center text-[15px] select-none flex flex-col items-center justify-center">
+                                <span>${day}</span>
+                                <span class="text-[9px] text-gray-400 font-bold scale-90 block mt-[-2px] tracking-tight">公休</span>
+                             </div>`;
+                } else if (dateString === selectedDateStr) {
+                    // 已選日期：淡棕色格子、純白字、圓角微陰影
+                    html += `<div class="py-3 bg-calActive text-white font-bold rounded-xl shadow-md cursor-pointer transform scale-105 transition text-center text-[15px]" onclick="selectDate('${dateString}')">${day}</div>`;
+                } else {
+                    // 一般可選日期
+                    html += `<div class="py-3 cursor-pointer hover:bg-gray-100 rounded-xl transition text-textBrown font-bold text-center text-[15px]" onclick="selectDate('${dateString}')">${day}</div>`;
                 }
             }
             grid.innerHTML = html;
         }
 
-        function changeFrontMonth(dir) { calMonth += dir; if(calMonth > 11) { calMonth = 0; calYear++; } if(calMonth < 0) { calMonth = 11; calYear--; } renderFrontCalendar(); }
-        function selectDate(dateStr) { selectedDateStr = dateStr; selectedTimeStr = ''; renderFrontCalendar(); const container = document.getElementById('timeSlotContainer'); if(container) container.innerHTML = '<div class="text-sm text-gray-400 text-center py-4">讀取中...</div>'; checkFormReady(); callGasGet('getDailySlots', { dateStr: dateStr }).then(renderTimeSlots).catch(err => { if(container) container.innerHTML = '<div class="text-gray-400 text-center py-4">時段讀取失敗</div>'; }); }
+        function changeFrontMonth(dir) { calMonth += dir; if(calMonth > 11) { calMonth = 0; calYear++; } if(calMonth < 0) { calMonth = 11; calYear--; } renderFrontCalendar(); preloadCurrentMonthSlotsMatrix(); }
+        
+        function selectDate(dateStr) { 
+            selectedDateStr = dateStr; 
+            selectedTimeStr = ''; 
+            renderFrontCalendar(); 
+            
+            const container = document.getElementById('timeSlotContainer'); 
+            if(!container) return;
+            
+            checkFormReady(); 
+            
+            if (cachedSlotsMatrixDictionary[dateStr]) {
+                renderTimeSlots(cachedSlotsMatrixDictionary[dateStr]);
+            } else {
+                container.innerHTML = '<div class="text-sm text-gray-400 text-center py-4">雷達配對中...</div>'; 
+                callGasGet('getDailySlots', { dateStr: dateStr }).then(res => {
+                    cachedSlotsMatrixDictionary[dateStr] = res; 
+                    renderTimeSlots(res);
+                }).catch(err => { 
+                    container.innerHTML = '<div class="text-gray-400 text-center py-4">時段讀取失敗</div>'; 
+                }); 
+            }
+        }
         
         function renderTimeSlots(res) { 
             const container = document.getElementById('timeSlotContainer'); if(!container) return; 
-            if(res && res.isClosed) { container.innerHTML = `<div class="text-red-500 font-bold text-center">${res.message}</div>`; return; } 
+            if(res && res.isClosed) { container.innerHTML = `<div class="text-red-500 font-bold text-center py-4 text-sm">${res.message}</div>`; return; } 
             
             let todayObj = new Date();
             let todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth()+1).padStart(2,'0')}-${String(todayObj.getDate()).padStart(2,'0')}`;
@@ -359,7 +450,7 @@
                         let slotHour = parseInt(time.split(':')[0]);
                         if(slotHour <= currentHour) return;
                     }
-                    html += `<button onclick="selectTime('${time}', this)" class="time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50">${time}</button>`; 
+                    html += `<button type="button" onclick="selectTime('${time}', this)" class="time-btn py-2.5 border border-gray-200 rounded-xl text-textBrown font-bold text-[14px] shadow-sm bg-white hover:bg-gray-50">${time}</button>`; 
                 });
             } 
             container.innerHTML = html + '</div>'; 
@@ -474,7 +565,6 @@
         function handleModalScrollEngine() { const body = document.getElementById('modalBody'); const btn = document.getElementById('modalCloseBtn'); if(!body || !btn) return; if (body.scrollHeight - body.scrollTop <= body.clientHeight + 30) unlockTermsButton(btn); }
         function unlockTermsButton(btn) { btn.disabled = false; btn.innerText = "✓ 本人已詳細閱讀並完全同意以上條款"; btn.className = "w-full bg-[#5c4d43] text-white p-4 rounded-2xl text-xs font-bold shadow-lg text-center cursor-pointer"; }
         
-        // 🌟 核心修復線：完全拔除原先 scale95 造成的錯誤，家長點擊完全解鎖通車！
         function closeTermsModalWindow() {
             let containerEl = document.getElementById('modalContainer');
             if(containerEl) containerEl.classList.add('scale-95'); 
@@ -540,7 +630,7 @@
             }
             if(!selectedDateStr) { Swal.fire('漏填項目提醒', '❌ 請點選日曆格子選取預約日期！', 'warning'); return false; }
             if(!selectedTimeStr) { Swal.fire('漏填項目提醒', '❌ 請選擇當日要進場的預約時段！', 'warning'); return false; }
-            if(!mainRead || !riskRead) { Swal.fire('漏填項目提醒', '❌ 請完整點擊詳閱上方兩項法律合約條款細則！', 'warning'); return false; }
+            if(!mainRead || !riskRead) { Swal.fire('漏填項目提醒', '❌ 請完整點擊詳閱上方開立的所有法律契約條款細則！', 'warning'); return false; }
             if(!isCheckedFinal) { Swal.fire('漏填項目提醒', '❌ 請點擊勾選合約條款同意書！', 'warning'); return false; }
             const sigCanvasObj = document.getElementById('sigCanvas');
             if(sigCanvasObj) {
@@ -574,103 +664,97 @@
           return packedPetsArray; 
         }
 
-        // 🌟 V108 終極版：前台送出立即回彈，不卡在正在寫入，彈窗關閉後按鈕字眼永久變更
         function processBooking() {
-    if(!validateFormInputsBeforeSubmit()) return;
-    const btn = document.getElementById('submitBtn');
-    if(btn) { btn.innerText = '正在寫入預約系統...'; btn.disabled = true; }
+            if(!validateFormInputsBeforeSubmit()) return;
+            const btn = document.getElementById('submitBtn');
+            if(btn) { btn.innerText = '正在寫入預約系統...'; btn.disabled = true; }
 
-    const petsPayload = packDynamicPetsJsonPayload();
-    let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
-    let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
-    const sigCanvasObj = document.getElementById('sigCanvas');
-    const lineNameVal = document.getElementById('lineName').value.trim();
+            const petsPayload = packDynamicPetsJsonPayload();
+            let mainServicesCombined = petsPayload.map(p => p.name + "(" + p.mainService + ")");
+            let addonsCombined = petsPayload.map(p => p.addons).filter(a => a !== '無');
+            const sigCanvasObj = document.getElementById('sigCanvas');
+            const lineNameVal = document.getElementById('lineName').value.trim();
 
-    let allPhotosPackedMap = {};
-    for (let key in globalPackedPetPhotos) {
-        if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
-    }
-
-    const formData = {
-        date: selectedDateStr,
-        time: selectedTimeStr,
-        phone: document.getElementById('phone').value.trim(),
-        lineName: lineNameVal,
-        ownerName: document.getElementById('ownerName').value,
-        email: document.getElementById('email').value.trim(),
-        mainService: mainServicesCombined.join(', '),
-        addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
-        price: currentTotal,
-        remark: '前台多寵物數位合約單',
-        contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
-        petsJsonString: JSON.stringify(petsPayload),
-        multiPhotosJson: JSON.stringify(allPhotosPackedMap),
-        signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
-    };
-
-    Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
-
-    let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
-
-    // 非同步雙軌盲發送，保障試算表100%安全收件
-    fetch(API_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ action: "submitBooking", payload: formData })
-    });
-
-    // 🌟 1.5秒黃金計時：關閉轉圈，先顯示成功彈窗
-    setTimeout(() => {
-        Swal.close();
-        Swal.fire({
-            title: '預約成功！',
-            html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
-            <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
-            <p class="font-bold">接下來請配合簡單兩步驟：</p>
-            <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
-            <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對喔！❤️</p>
-            </div>`,
-            icon: 'success',
-            confirmButtonColor: '#8A9A5B',
-            confirmButtonText: '📋 複製明細並前往官方 LINE',
-            allowOutsideClick: false // 強迫客人必須點擊按鈕
-        }).then((result) => {
-            // 🌟 點擊按鈕後，才執行複製與跳轉 (這時有了真實點擊，瀏覽器絕對不會擋)
-            if (result.isConfirmed) {
-                navigator.clipboard.writeText(lineText).catch(err => console.log('複製略過', err));
-                
-                // 更新原網頁按鈕狀態
-                if(btn) {
-                    btn.innerText = '確定已收到預約申請！';
-                    btn.className = "w-full bg-green-100 text-green-700 font-black py-4 rounded-xl mb-6 text-sm border border-green-300 text-center block cursor-default";
-                }
-                // 跳轉至官方 LINE
-                window.open("https://lin.ee/6A3s756D", '_blank');
+            let allPhotosPackedMap = {};
+            for (let key in globalPackedPetPhotos) {
+                if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
             }
-        });
-    }, 1500);
-}
-</script>
 
-<div class="max-w-md mx-auto px-4 pb-4 mt-12">
-    <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%] mx-auto scale-95">
-        <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
-            <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專區
-        </h4>
-        <p class="text-[10px] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
+            const formData = {
+                date: selectedDateStr,
+                time: selectedTimeStr,
+                phone: document.getElementById('phone').value.trim(),
+                lineName: lineNameVal,
+                ownerName: document.getElementById('ownerName').value,
+                email: document.getElementById('email').value.trim(),
+                mainService: mainServicesCombined.join(', '),
+                addons: addonsCombined.length > 0 ? addonsCombined.join(', ') : '無',
+                price: currentTotal,
+                remark: '前台多寵物數位合約單',
+                contractTime: new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }),
+                petsJsonString: JSON.stringify(petsPayload),
+                multiPhotosJson: JSON.stringify(allPhotosPackedMap),
+                signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
+            };
 
-        <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature"
-        target="_blank"
-        class="w-full bg-[#8A9A5B]/90 text-white py-2 rounded-xl text-[11px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
-        ⚡ 點此補簽數位合約
-        </a>
+            Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+
+            let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
+
+            fetch(API_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify({ action: "submitBooking", payload: formData })
+            });
+
+            setTimeout(() => {
+                Swal.close();
+                Swal.fire({
+                    title: '預約成功！',
+                    html: `<div class="text-left text-xs text-gray-600 bg-gray-50 p-3 rounded-xl space-y-2 leading-relaxed">
+                    <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
+                    <p class="font-bold">接下來請配合簡單兩步驟：</p>
+                    <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
+                    <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對喔！❤️</p>
+                    </div>`,
+                    icon: 'success',
+                    confirmButtonColor: '#8A9A5B',
+                    confirmButtonText: '📋 複製明細並前往官方 LINE',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        navigator.clipboard.writeText(lineText).catch(err => console.log('複製略過', err));
+                        
+                        if(btn) {
+                            btn.innerText = '確定已收到預約申請！';
+                            btn.className = "w-full bg-green-100 text-green-700 font-black py-4 rounded-xl mb-6 text-sm border border-green-300 text-center block cursor-default";
+                        }
+                        window.open("https://lin.ee/6A3s756D", '_blank');
+                    }
+                });
+            }, 1500);
+        }
+    </script>
+
+    <div class="max-w-md mx-auto px-4 pb-4 mt-12">
+        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%] mx-auto scale-95">
+            <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
+                <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專專區
+            </h4>
+            <p class="text-[10px] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
+
+            <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature"
+            target="_blank"
+            class="w-full bg-[#8A9A5B]/90 text-white py-2 rounded-xl text-[11px] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
+            ⚡ 點此補簽數位合約
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
-    Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
-</div>
+    <div class="text-center pb-8 pt-4 text-sibylLight text-[11px] tracking-widest uppercase clear-both">
+        Designed by <a href="https://www.heysibyl.com/" target="_blank" class="font-bold hover:underline">Sibyl | 數位管家</a>
+    </div>
 
 </body>
 </html>
