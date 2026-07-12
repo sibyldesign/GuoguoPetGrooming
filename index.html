@@ -692,61 +692,66 @@ card.innerHTML = `
             btn.innerText = `送出預約申請 (預估時程: ${currentDurationTotal}分鐘 / 金額: $${currentTotal})`;
         }
 
-        function validateFormInputsBeforeSubmit() {
-            const phoneVal = document.getElementById('phone').value.trim();
-            if(!phoneVal || phoneVal.length < 8) { Swal.fire('漏填項目提醒', '❌ 請完整填寫有效的家長聯絡電話！', 'warning'); return false; }
-            const emailVal = document.getElementById('email').value.trim();
-            if(!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) { Swal.fire('漏填項目提醒', '❌ 請完整填寫正確的電子信箱！', 'warning'); return false; }
-            const lineNameVal = document.getElementById('lineName').value.trim();
-            if(!lineNameVal) { Swal.fire('漏填項目提醒', '❌ 請完整填寫家長 LINE 名稱！', 'warning'); return false; }
-            const container = document.getElementById('dynamicPetContainer');
-            if(!container || container.children.length === 0) { Swal.fire('漏填項目提醒', '❌ 請至少新增一隻施作毛孩的資料！', 'warning'); return false; }
-            for (let i = 0; i < container.children.length; i++) {
-                const cardEl = container.children[i];
-                const pName = cardEl.querySelector('.p-name').value.trim(); const pBreed = cardEl.querySelector('.p-breed').value.trim();
-                const pSize = cardEl.querySelector('.p-size').value.trim(); const pCoat = cardEl.querySelector('.p-coat').value.trim();
-                const mainService = cardEl.querySelector('.p-main-service').value;
-                if(!pName) { Swal.fire('漏填項目提醒', `❌ 請填寫第 ${i+1} 隻毛孩的姓名！`, 'warning'); return false; }
-                if(!pBreed) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的品種！`, 'warning'); return false; }
-                if(!pSize) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的體型（小型犬/中型犬/大型犬）！`, 'warning'); return false; }
-                if(!pCoat) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的毛質（短毛/長毛/雙層毛）！`, 'warning'); return false; }
-                if(!mainService) { Swal.fire('漏填項目提醒', `❌ 請選擇毛孩「${pName}」本次要施作的主服務項目！`, 'warning'); return false; }
-            }
-            if(!selectedDateStr) { Swal.fire('漏填項目提醒', '❌ 請點選日曆格子選取預約日期！', 'warning'); return false; }
-            if(!selectedTimeStr) { Swal.fire('漏填項目提醒', '❌ 請選擇當日要進場的預約時段！', 'warning'); return false; }
-            if(!mainRead || !riskRead) { Swal.fire('漏填項目提醒', '❌ 請完整點擊詳閱上方開立的所有法律契約條款細則！', 'warning'); return false; }
-            if(!isCheckedFinal) { Swal.fire('漏填項目提醒', '❌ 請點擊勾選合約條款同意書！', 'warning'); return false; }
-            const sigCanvasObj = document.getElementById('sigCanvas');
-            if(sigCanvasObj) {
-                const blankCanvas = document.createElement('canvas'); blankCanvas.width = sigCanvasObj.width; blankCanvas.height = sigCanvasObj.height;
-                if(sigCanvasObj.toDataURL() === blankCanvas.toDataURL()) { Swal.fire('漏填項目提醒', '❌ 請在下方手寫簽名板親筆簽名正本！', 'warning'); return false; }
-            }
-            return true;
-        }
+        // 修正：全面抽離對 .p-coat (毛質) 的卡死驗證，並將體型提示與公斤數對齊
+function validateFormInputsBeforeSubmit() {
+    const phoneVal = document.getElementById('phone').value.trim();
+    if(!phoneVal || phoneVal.length < 8) { Swal.fire('漏填項目提醒', '❌ 請完整填寫有效的家長聯絡電話！', 'warning'); return false; }
+    const emailVal = document.getElementById('email').value.trim();
+    if(!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) { Swal.fire('漏填項目提醒', '❌ 請完整填寫正確的電子信箱！', 'warning'); return false; }
+    const lineNameVal = document.getElementById('lineName').value.trim();
+    if(!lineNameVal) { Swal.fire('漏填項目提醒', '❌ 請完整填寫家長 LINE 名稱！', 'warning'); return false; }
+    const container = document.getElementById('dynamicPetContainer');
+    if(!container || container.children.length === 0) { Swal.fire('漏填項目提醒', '❌ 請至少新增一隻施作毛孩的資料！', 'warning'); return false; }
+    
+    for (let i = 0; i < container.children.length; i++) {
+        const cardEl = container.children[i];
+        const pName = cardEl.querySelector('.p-name').value.trim(); 
+        const pBreed = cardEl.querySelector('.p-breed').value.trim();
+        const pSize = cardEl.querySelector('.p-size').value.trim(); // 這裡現在代表大約公斤數
+        const mainService = cardEl.querySelector('.p-main-service').value;
+        
+        if(!pName) { Swal.fire('漏填項目提醒', `❌ 請填寫第 ${i+1} 隻毛孩的姓名！`, 'warning'); return false; }
+        if(!pBreed) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的品種！`, 'warning'); return false; }
+        if(!pSize) { Swal.fire('漏填項目提醒', `❌ 請填寫毛孩「${pName}」的體重公斤數分類！`, 'warning'); return false; }
+        if(!mainService) { Swal.fire('漏填項目提醒', `❌ 請選擇毛孩「${pName}」本次要施作的主服務項目！`, 'warning'); return false; }
+    }
+    
+    if(!selectedDateStr) { Swal.fire('漏填項目提醒', '❌ 請點選日曆格子選取預約日期！', 'warning'); return false; }
+    if(!selectedTimeStr) { Swal.fire('漏填項目提醒', '❌ 請選擇當日要進場的預約時段！', 'warning'); return false; }
+    if(!mainRead || !riskRead) { Swal.fire('漏填項目提醒', '❌ 請完整點擊詳閱上方開立的所有法律契約條款細則！', 'warning'); return false; }
+    if(!isCheckedFinal) { Swal.fire('漏填項目提醒', '❌ 請點擊勾選合約條款同意書！', 'warning'); return false; }
+    
+    const sigCanvasObj = document.getElementById('sigCanvas');
+    if(sigCanvasObj) {
+        const blankCanvas = document.createElement('canvas'); blankCanvas.width = sigCanvasObj.width; blankCanvas.height = sigCanvasObj.height;
+        if(sigCanvasObj.toDataURL() === blankCanvas.toDataURL()) { Swal.fire('漏填項目提醒', '❌ 請在下方手寫簽名板親筆簽名正本！', 'warning'); return false; }
+    }
+    return true;
+}
 
-        function packDynamicPetsJsonPayload() {
-          const container = document.getElementById('dynamicPetContainer'); 
-          const packedPetsArray = []; 
-          if(!container) return packedPetsArray; 
-          for (let i = 0; i < container.children.length; i++) { 
-            const cardEl = container.children[i]; 
-            const id = cardEl.id.split('_')[1]; 
-            let addonsArr = []; 
-            cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value)); 
-            packedPetsArray.push({
-              name: cardEl.querySelector('.p-name').value.trim(), 
-              breed: cardEl.querySelector('.p-breed').value.trim(), 
-              petSize: cardEl.querySelector('.p-size').value.trim(), 
-              coatType: cardEl.querySelector('.p-coat').value.trim(), 
-              personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', 
-              healthTag: cardEl.querySelector('.p-heal').value.trim() || '無', 
-              mainService: cardEl.querySelector('.p-main-service').value, 
-              addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無', 
-              petPhotoBase64: globalPackedPetPhotos[id] || "" 
-            });
-          }
-          return packedPetsArray; 
-        }
+// 修正：打包資料結構時，同樣把已經不存在的 coatType 抽離
+function packDynamicPetsJsonPayload() {
+  const container = document.getElementById('dynamicPetContainer'); 
+  const packedPetsArray = []; 
+  if(!container) return packedPetsArray; 
+  for (let i = 0; i < container.children.length; i++) { 
+    const cardEl = container.children[i]; 
+    const id = cardEl.id.split('_')[1]; 
+    let addonsArr = []; 
+    cardEl.querySelectorAll('.addon-checkbox:checked').forEach(cb => addonsArr.push(cb.value)); 
+    packedPetsArray.push({
+      name: cardEl.querySelector('.p-name').value.trim(), 
+      breed: cardEl.querySelector('.p-breed').value.trim(), 
+      petSize: cardEl.querySelector('.p-size').value.trim(), // 對齊公斤數體重
+      personalityTag: cardEl.querySelector('.p-pers').value.trim() || '無', 
+      healthTag: cardEl.querySelector('.p-heal').value.trim() || '無', 
+      mainService: cardEl.querySelector('.p-main-service').value, 
+      addons: addonsArr.length > 0 ? addonsArr.join(', ') : '無', 
+      petPhotoBase64: globalPackedPetPhotos[id] || "" 
+    });
+  }
+  return packedPetsArray; 
+}
 
         function processBooking() {
             if(!validateFormInputsBeforeSubmit()) return;
