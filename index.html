@@ -521,23 +521,26 @@
             });
             if(addonHtml === "") addonHtml = `<div class="col-span-2 text-xs text-gray-400 italic">暫無加購項目</div>`;
 
-            card.innerHTML = `
-            <div class="flex justify-between items-center border-b pb-2"><span class="bg-avocado text-white font-bold text-[10px] px-3 py-1 rounded-lg">施作毛孩 NO. ${id}</span>${id > 1 ? `<button type="button" onclick="document.getElementById('petCardRoot_${id}').remove(); recalculatePrice();" class="text-[10px] font-bold text-rose-500">移除</button>` : ''}</div>
-            <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-[10px] text-gray-400 mb-1 block">毛孩姓名 *</label><input type="text" class="text-input p-name text-[12px]" oninput="checkFormReady()" placeholder="名字"></div>
-                <div><label class="text-[10px] text-gray-400 mb-1 block">品種 *</label><input type="text" class="text-input p-breed text-[12px]" placeholder="例如: 柴犬"></div>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-[10px] text-gray-400 mb-1 block">體型分類 *</label><input type="text" class="text-input p-size text-[12px]" placeholder="小型犬/中型犬/大型犬"></div>
-                <div><label class="text-[10px] text-gray-400 mb-1 block">毛質分類 *</label><input type="text" class="text-input p-coat text-[12px]" placeholder="短毛/長毛/雙層毛"></div>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-[10px] text-gray-400 mb-1 block">個性標籤</label><input type="text" class="text-input p-pers text-[12px]" placeholder="如: 怕剪指甲"></div>
-                <div><label class="text-[10px] text-gray-400 mb-1 block">健康標籤</label><input type="text" class="text-input p-heal text-[12px]" placeholder="如: 無心臟病"></div>
-            </div>
-            <div><label class="text-[11px] font-bold text-textBrown mb-1 block">主服務項目 *</label><select class="text-input p-main-service text-gray-600 font-bold" onchange="recalculatePrice()" required>${serviceOptions}</select></div>
-            <div><label class="text-[11px] font-bold text-textBrown mb-1.5 block">專屬加購護理 (可複選)</label><div class="grid grid-cols-2 gap-2">${addonHtml}</div></div>
-            <div class="border border-gray-100 rounded-xl p-3 bg-gray-50/40 space-y-2"><label class="text-[10px] font-bold text-gray-400 block"><i class="fas fa-camera"></i> 上傳寵物真實相片 (選填)</label><input type="file" accept="image/*" onchange="previewAndPackIndividualPetImage(this, ${id})" class="text-xs text-gray-500 cursor-pointer"><div id="photoPreviewContainer_${id}" class="hidden w-16 h-16 rounded-lg overflow-hidden border bg-white shadow-inner"><img id="photoPreviewImg_${id}" class="w-full h-full object-cover"></div></div>`;
+            <!-- 置換前台網頁（分頁6）中的 appendNewPetFormCard() 內部 HTML 區塊 -->
+card.innerHTML = `
+<div class="flex justify-between items-center border-b pb-2"><span class="bg-avocado text-white font-bold text-[10px] px-3 py-1 rounded-lg">施作毛孩 NO. ${id}</span>${id > 1 ? `<button type="button" onclick="document.getElementById('petCardRoot_${id}').remove(); recalculatePrice();" class="text-[10px] font-bold text-rose-500">移除</button>` : ''}</div>
+<div class="grid grid-cols-2 gap-2">
+    <div><label class="text-[10px] text-gray-400 mb-1 block">毛孩姓名 *</label><input type="text" class="text-input p-name text-[12px]" oninput="checkFormReady()" placeholder="名字"></div>
+    <div><label class="text-[10px] text-gray-400 mb-1 block">品種 *</label><input type="text" class="text-input p-breed text-[12px]" placeholder="例如: 柴犬"></div>
+</div>
+<div class="grid grid-cols-1 gap-2">
+    <!-- 項目 1：體型分類灰字改成 體重（大約公斤數） -->
+    <div><label class="text-[10px] text-gray-400 mb-1 block">體型分類 *</label><input type="text" class="text-input p-size text-[12px]" placeholder="體重（大約公斤數）"></div>
+    <!-- 項目 2：已刪除原有的毛質分類框框 -->
+</div>
+<div class="grid grid-cols-2 gap-2">
+    <div><label class="text-[10px] text-gray-400 mb-1 block">個性標籤</label><input type="text" class="text-input p-pers text-[12px]" placeholder="如: 怕剪指甲"></div>
+    <div><label class="text-[10px] text-gray-400 mb-1 block">健康標籤</label><input type="text" class="text-input p-heal text-[12px]" placeholder="如: 無心臟病"></div>
+</div>
+<div><label class="text-[11px] font-bold text-textBrown mb-1 block">主服務項目 *</label><select class="text-input p-main-service text-gray-600 font-bold" onchange="recalculatePrice()" required>${serviceOptions}</select></div>
+<div><label class="text-[11px] font-bold text-textBrown mb-1.5 block">專屬加購護理 (可複選)</label><div class="grid grid-cols-2 gap-2">${addonHtml}</div></div>
+<div class="border border-gray-100 rounded-xl p-3 bg-gray-50/40 space-y-2"><label class="text-[10px] font-bold text-gray-400 block"><i class="fas fa-camera"></i> 上傳寵物真實相片 (選填)</label><input type="file" accept="image/*" onchange="previewAndPackIndividualPetImage(this, ${id})" class="text-xs text-gray-500 cursor-pointer"><div id="photoPreviewContainer_${id}" class="hidden w-16 h-16 rounded-lg overflow-hidden border bg-white shadow-inner"><img id="photoPreviewImg_${id}" class="w-full h-full object-cover"></div></div>`;
+
             wrapper.appendChild(card); card.querySelectorAll('.addon-checkbox').forEach(cb => { cb.addEventListener('change', recalculatePrice); }); checkFormReady();
         }
 
@@ -758,3 +761,4 @@
 
 </body>
 </html>
+
