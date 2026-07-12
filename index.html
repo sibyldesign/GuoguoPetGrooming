@@ -468,24 +468,50 @@
         }
         
         function triggerHistorySearch() {
-            const phone = document.getElementById('phone').value.trim(); if(phone.length < 8) return;
-            callGasGet('checkCustomerHistory', { phone: phone }).then(res => {
-                if(res && res.found) {
-                    document.getElementById('ownerName').value = res.ownerName || ''; 
-                    document.getElementById('lineName').value = res.lineName || ''; 
-                    if(res.email) document.getElementById('email').value = res.email || '';
-                    cachedCustomerPetsData = res.petList || []; const petDropdown = document.getElementById('multiPetDropdown'); const petBlock = document.getElementById('multiPetSelectBlock');
-                    if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
-                        let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位毛孩歷史紀錄，請點選帶入 ---</option>`;
-                        cachedCustomerPetsData.forEach((pet, index) => { dropdownHtml += `<option value="${index}">歷史名單：${pet.name}</option>`; });
-                        dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩</option>`;
-                        petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
-                    } else if(petBlock) { petBlock.classList.add('hidden'); }
-                    Swal.fire({toast:true, position:'top', icon:'success', title: '已自動帶入聯絡名冊', timer:1500, showConfirmButton:false});
-                } else { Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); if(document.getElementById('multiPetSelectBlock')) document.getElementById('multiPetSelectBlock').classList.add('hidden'); cachedCustomerPetsData = []; }
-                checkFormReady();
-            }).catch(err => console.error("查詢失敗", err));
+    const phone = document.getElementById('phone').value.trim(); 
+    if(phone.length < 8) return;
+    
+    // 清除舊的提示框，避免重複疊加
+    const oldNotice = document.getElementById('member-luxury-notice');
+    if(oldNotice) oldNotice.remove();
+
+    Swal.fire({title: '正在深度跨表查號...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+
+    callGasGet('checkCustomerHistory', { phone: phone }).then(res => {
+        Swal.close();
+        if(res && res.found) {
+            document.getElementById('ownerName').value = res.ownerName || ''; 
+            document.getElementById('lineName').value = res.lineName || ''; 
+            if(res.email) document.getElementById('email').value = res.email || '';
+            
+            // 🌟 奢華連動：完美呈現該電話在後台毛孩履歷庫的正確額度！
+            const phoneInputWrapper = document.getElementById('phone').parentNode;
+            const noticeDiv = document.createElement('div');
+            noticeDiv.id = 'member-luxury-notice';
+            noticeDiv.className = 'mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-black text-amber-800 animate-fade-in';
+            noticeDiv.innerHTML = `👑 顯示口腔有效會員： ${res.memberExpiry || '無'} | 寄卡餘額： ${res.cardRemain || 0} 次`;
+            phoneInputWrapper.appendChild(noticeDiv);
+
+            cachedCustomerPetsData = res.petList || []; 
+            const petDropdown = document.getElementById('multiPetDropdown'); 
+            const petBlock = document.getElementById('multiPetSelectBlock');
+            if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
+                let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位毛孩歷史紀錄，請點選帶入 ---</option>`;
+                cachedCustomerPetsData.forEach((pet, index) => { dropdownHtml += `<option value="${index}">歷史名單：${pet.name}</option>`; });
+                dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩</option>`;
+                petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
+            } else if(petBlock) { petBlock.classList.add('hidden'); }
+            Swal.fire({toast:true, position:'top', icon:'success', title: '已自動帶入聯絡名冊', timer:1500, showConfirmButton:false});
+        } else { 
+            Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); 
+            if(document.getElementById('multiPetSelectBlock')) document.getElementById('multiPetSelectBlock').classList.add('hidden'); 
+            cachedCustomerPetsData = []; 
         }
+    }).catch(err => {
+        Swal.close();
+        console.error("查詢失敗", err);
+    });
+}
 
         function switchSelectedPetInfo(indexVal) {
             if(indexVal === "" || indexVal === "_CHOOSE_") return;
