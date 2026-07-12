@@ -265,7 +265,44 @@
             });
         }
 
-        function initPage() { renderFrontCalendar(); loadAnnouncement(); loadCloudContracts(); loadPortfolio(); loadServices(); }
+        // 1. 宣告一個全域變數用來存放客人的 LINE_UID
+let clientDetectedLineUID = ""; 
+
+function initPage() {
+    renderFrontCalendar(); 
+    loadAnnouncement(); 
+    loadCloudContracts(); 
+    loadPortfolio(); 
+    loadServices(); 
+    
+    // 🚀 啟動 LINE LIFF 背景秒抓 UID 機制
+    // 請先去 LINE Developers 後台申請一個 LIFF ID (例如: 2000xxxxxx-xxxxxxx)
+    const MY_LIFF_ID = "您的LIFF_ID填在這裡"; 
+    
+    if (typeof liff !== "undefined" && MY_LIFF_ID !== "您的LIFF_ID填在這裡") {
+        liff.init({ liffId: MY_LIFF_ID }).then(() => {
+            // 判斷家長是否登入 LINE 環境
+            if (liff.isLoggedIn()) {
+                // 100% 背景自動抓取客人的 Profile 資訊
+                liff.getProfile().then(profile => {
+                    if (profile && profile.userId) {
+                        clientDetectedLineUID = profile.userId;
+                        
+                        // 【貼心奢華加碼】如果客人的 LINE 名稱沒填，系統幫他自動回填 LINE 暱稱！
+                        const lineNameInput = document.getElementById('lineName');
+                        if (lineNameInput && lineNameInput.value.trim() === "") {
+                            lineNameInput.value = profile.displayName || "";
+                        }
+                        console.log("背景抓取 UID 成功:", clientDetectedLineUID);
+                    }
+                }).catch(err => console.log("抓取 Profile 失敗:", err));
+            } else {
+                // 如果是在 LINE 內開啟但沒登入，可選擇是否強制觸發登入（通常 B 方案在選單點開就是登入狀態）
+                // liff.login(); 
+            }
+        }).catch(err => console.error("LIFF 初始化失敗:", err));
+    }
+}
         
         function loadCloudContracts() { 
             callGasGet('getSystemContractSettings').then(res => { 
@@ -467,7 +504,8 @@
           checkFormReady();
         }
         
-        function triggerHistorySearch() {
+        // 🌟 修正：電話查表完成，提示框顯示「預設第一隻毛孩」的額度
+function triggerHistorySearch() {
     const phone = document.getElementById('phone').value.trim(); 
     if(phone.length < 8) return;
     
@@ -475,7 +513,7 @@
     const oldNotice = document.getElementById('member-luxury-notice');
     if(oldNotice) oldNotice.remove();
 
-    Swal.fire({title: '正在深度跨表查號...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+    Swal.fire({title: '正在查核毛孩專屬額度...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
 
     callGasGet('checkCustomerHistory', { phone: phone }).then(res => {
         Swal.close();
@@ -484,50 +522,67 @@
             document.getElementById('lineName').value = res.lineName || ''; 
             if(res.email) document.getElementById('email').value = res.email || '';
             
-            // 🌟 奢華連動：完美呈現該電話在後台毛孩履歷庫的正確額度！
+            cachedCustomerPetsData = res.petList || []; 
+            
+            // 建立奢華提示框元件
             const phoneInputWrapper = document.getElementById('phone').parentNode;
             const noticeDiv = document.createElement('div');
             noticeDiv.id = 'member-luxury-notice';
             noticeDiv.className = 'mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-black text-amber-800 animate-fade-in';
-            noticeDiv.innerHTML = `👑 顯示口腔有效會員： ${res.memberExpiry || '無'} | 寄卡餘額： ${res.cardRemain || 0} 次`;
+            
+            // 預設抓取第一隻毛孩的專屬額度進行初始展示
+            if (cachedCustomerPetsData.length > 0) {
+                let firstPet = cachedCustomerPetsData[0];
+                noticeDiv.innerHTML = `👑 口腔有效會員： ${firstPet.memberExpiry || '無'} | 寄卡餘額： ${firstPet.cardRemain || 0} 次`;
+            } else {
+                noticeDiv.innerHTML = `👑 口腔有效會員： 無 | 寄卡餘額： 0 次`;
+            }
             phoneInputWrapper.appendChild(noticeDiv);
 
-            cachedCustomerPetsData = res.petList || []; 
             const petDropdown = document.getElementById('multiPetDropdown'); 
             const petBlock = document.getElementById('multiPetSelectBlock');
             if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
                 let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位毛孩歷史紀錄，請點選帶入 ---</option>`;
-                cachedCustomerPetsData.forEach((pet, index) => { dropdownHtml += `<option value="${index}">歷史名單：${pet.name}</option>`; });
+                cachedCustomerPetsData.forEach((pet, index) => { 
+                    dropdownHtml += `<option value="${index}">歷史名單：${pet.name} (${pet.breed})</option>`; 
+                });
                 dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩</option>`;
                 petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
             } else if(petBlock) { petBlock.classList.add('hidden'); }
+            
             Swal.fire({toast:true, position:'top', icon:'success', title: '已自動帶入聯絡名冊', timer:1500, showConfirmButton:false});
         } else { 
             Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); 
             if(document.getElementById('multiPetSelectBlock')) document.getElementById('multiPetSelectBlock').classList.add('hidden'); 
             cachedCustomerPetsData = []; 
         }
-    }).catch(err => {
-        Swal.close();
-        console.error("查詢失敗", err);
-    });
+    }).catch(err => { Swal.close(); console.error(err); });
 }
 
-        function switchSelectedPetInfo(indexVal) {
-            if(indexVal === "" || indexVal === "_CHOOSE_") return;
-            const petSelected = cachedCustomerPetsData[parseInt(indexVal)]; if(!petSelected) return;
-            const card1 = document.getElementById('petCardRoot_1');
-            if(card1) { 
-                card1.querySelector('.p-name').value = petSelected.name || ''; 
-                card1.querySelector('.p-breed').value = petSelected.breed || ''; 
-                card1.querySelector('.p-size').value = petSelected.petSize || ''; 
-                card1.querySelector('.p-coat').value = petSelected.coatType || ''; 
-                card1.querySelector('.p-pers').value = petSelected.personalityTag || ''; 
-                card1.querySelector('.p-heal').value = petSelected.healthTag || ''; 
-                Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩 ${petSelected.name} 的全部履歷`, timer:1500, showConfirmButton:false}); 
-                recalculatePrice(); 
-            }
+// 🌟 修正：當主人點選不同毛孩時，奢華提示框跟著變更為「該毛孩專屬」的年卡、寄卡額度！
+function switchSelectedPetInfo(indexVal) {
+    if(indexVal === "" || indexVal === "_CHOOSE_") return;
+    const petSelected = cachedCustomerPetsData[parseInt(indexVal)]; 
+    if(!petSelected) return;
+    
+    const card1 = document.getElementById('petCardRoot_1');
+    if(card1) { 
+        card1.querySelector('.p-name').value = petSelected.name || ''; 
+        card1.querySelector('.p-breed').value = petSelected.breed || ''; 
+        card1.querySelector('.p-size').value = petSelected.petSize || ''; 
+        card1.querySelector('.p-pers').value = petSelected.personalityTag || ''; 
+        card1.querySelector('.p-heal').value = petSelected.healthTag || ''; 
+        
+        // 🚀 動態重寫最上方的奢華提示框，實現同主人、不同毛孩的正確額度切割！
+        const luxuryNotice = document.getElementById('member-luxury-notice');
+        if (luxuryNotice) {
+            luxuryNotice.innerHTML = `👑 口腔有效會員： ${petSelected.memberExpiry || '無'} | 寄卡餘額： ${petSelected.cardRemain || 0} 次`;
         }
+        
+        Swal.fire({toast:true, position:'top', icon:'success', title: `已成功動態切換 ${petSelected.name} 的專屬卡片額度！`, timer:1800, showConfirmButton:false}); 
+        recalculatePrice(); 
+    }
+}
 
         function appendNewPetFormCard() {
             petCount++; const id = petCount; const wrapper = document.getElementById('dynamicPetContainer'); if(!wrapper) return;
@@ -710,6 +765,7 @@ card.innerHTML = `
             }
 
             const formData = {
+                lineUID: clientDetectedLineUID,
                 date: selectedDateStr,
                 time: selectedTimeStr,
                 phone: document.getElementById('phone').value.trim(),
