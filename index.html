@@ -505,11 +505,7 @@ function triggerHistorySearch() {
     const phone = document.getElementById('phone').value.trim(); 
     if(phone.length < 8) return;
     
-    // 清除舊的提示框，避免重複疊加
-    const oldNotice = document.getElementById('member-luxury-notice');
-    if(oldNotice) oldNotice.remove();
-
-    Swal.fire({title: '正在查核毛孩專屬額度...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+    Swal.fire({title: '正在查核毛孩專屬履歷額度...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
 
     callGasGet('checkCustomerHistory', { phone: phone }).then(res => {
         Swal.close();
@@ -519,31 +515,19 @@ function triggerHistorySearch() {
             if(res.email) document.getElementById('email').value = res.email || '';
             
             cachedCustomerPetsData = res.petList || []; 
-            
-            // 建立奢華提示框元件
-            const phoneInputWrapper = document.getElementById('phone').parentNode;
-            const noticeDiv = document.createElement('div');
-            noticeDiv.id = 'member-luxury-notice';
-            noticeDiv.className = 'mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-black text-amber-800 animate-fade-in';
-            
-            // 預設抓取第一隻毛孩的專屬額度進行初始展示
-            if (cachedCustomerPetsData.length > 0) {
-                let firstPet = cachedCustomerPetsData[0];
-                noticeDiv.innerHTML = `👑 口腔有效會員： ${firstPet.memberExpiry || '無'} | 寄卡餘額： ${firstPet.cardRemain || 0} 次`;
-            } else {
-                noticeDiv.innerHTML = `👑 口腔有效會員： 無 | 寄卡餘額： 0 次`;
-            }
-            phoneInputWrapper.appendChild(noticeDiv);
-
             const petDropdown = document.getElementById('multiPetDropdown'); 
             const petBlock = document.getElementById('multiPetSelectBlock');
+            
             if (cachedCustomerPetsData.length > 0 && petDropdown && petBlock) {
                 let dropdownHtml = `<option value="" disabled selected>--- 系統偵測到多位毛孩歷史紀錄，請點選帶入 ---</option>`;
                 cachedCustomerPetsData.forEach((pet, index) => { 
                     dropdownHtml += `<option value="${index}">歷史名單：${pet.name} (${pet.breed})</option>`; 
                 });
-                dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩</option>`;
+                dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩（清空重填）</option>`;
                 petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
+                
+                // 預設將第一隻毛孩的額度帶入 NO.1 卡片中展示
+                applyLuxuryNoticeToCard(1, cachedCustomerPetsData[0]);
             } else if(petBlock) { petBlock.classList.add('hidden'); }
             
             Swal.fire({toast:true, position:'top', icon:'success', title: '已自動帶入聯絡名冊', timer:1500, showConfirmButton:false});
@@ -551,75 +535,111 @@ function triggerHistorySearch() {
             Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); 
             if(document.getElementById('multiPetSelectBlock')) document.getElementById('multiPetSelectBlock').classList.add('hidden'); 
             cachedCustomerPetsData = []; 
+            clearPetCardInputs(1);
         }
+        checkFormReady();
     }).catch(err => { Swal.close(); console.error(err); });
 }
 
 // 🌟 修正：當主人點選不同毛孩時，奢華提示框跟著變更為「該毛孩專屬」的年卡、寄卡額度！
 function switchSelectedPetInfo(indexVal) {
-    if(indexVal === "" || indexVal === "_CHOOSE_") return;
+    const card1 = document.getElementById('petCardRoot_1');
+    if(!card1) return;
+    
+    if(indexVal === "" || indexVal === "_CHOOSE_") {
+        // 🚀 防呆核心：家長選擇填寫新毛孩，立刻把輸入框全部清空歸零，絕不殘留別隻狗的資料！
+        clearPetCardInputs(1);
+        Swal.fire({toast:true, position:'top', icon:'info', title: '已清空表單，請輸入新毛孩資料', timer:1500, showConfirmButton:false});
+        return;
+    }
+    
     const petSelected = cachedCustomerPetsData[parseInt(indexVal)]; 
     if(!petSelected) return;
     
-    const card1 = document.getElementById('petCardRoot_1');
-    if(card1) { 
-        card1.querySelector('.p-name').value = petSelected.name || ''; 
-        card1.querySelector('.p-breed').value = petSelected.breed || ''; 
-        card1.querySelector('.p-size').value = petSelected.petSize || ''; 
-        card1.querySelector('.p-pers').value = petSelected.personalityTag || ''; 
-        card1.querySelector('.p-heal').value = petSelected.healthTag || ''; 
-        
-        // 🚀 動態重寫最上方的奢華提示框，實現同主人、不同毛孩的正確額度切割！
-        const luxuryNotice = document.getElementById('member-luxury-notice');
-        if (luxuryNotice) {
-            luxuryNotice.innerHTML = `👑 口腔有效會員： ${petSelected.memberExpiry || '無'} | 寄卡餘額： ${petSelected.cardRemain || 0} 次`;
-        }
-        
-        Swal.fire({toast:true, position:'top', icon:'success', title: `已成功動態切換 ${petSelected.name} 的專屬卡片額度！`, timer:1800, showConfirmButton:false}); 
-        recalculatePrice(); 
-    }
+    card1.querySelector('.p-name').value = petSelected.name || ''; 
+    card1.querySelector('.p-breed').value = petSelected.breed || ''; 
+    card1.querySelector('.p-size').value = petSelected.petSize || ''; 
+    card1.querySelector('.p-pers').value = petSelected.personalityTag || ''; 
+    card1.querySelector('.p-heal').value = petSelected.healthTag || ''; 
+    
+    // 🚀 動態刷新 NO.1 毛孩專屬的獨立奢華提示框額度
+    applyLuxuryNoticeToCard(1, petSelected);
+    
+    Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩 ${petSelected.name} 的專屬額度`, timer:1500, showConfirmButton:false}); 
+    recalculatePrice(); 
+}
+
+// 輔助函數：在指定的毛孩卡片內渲染專屬的奢華額度提示框
+function applyLuxuryNoticeToCard(cardId, petData) {
+    const cardEl = document.getElementById(`petCardRoot_${cardId}`);
+    if(!cardEl) return;
+    
+    let oldNotice = cardEl.querySelector('.card-luxury-notice');
+    if(oldNotice) oldNotice.remove();
+    
+    if(!petData) return;
+    
+    const noticeDiv = document.createElement('div');
+    noticeDiv.className = 'card-luxury-notice my-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-black text-amber-800 animate-fade-in';
+    noticeDiv.innerHTML = `👑 顯示口腔有效會員： ${petData.memberExpiry || '無'} | 寄卡餘額： ${petData.cardRemain || 0} 次`;
+    
+    // 塞在主服務下拉選單的前方
+    const mainServiceSelect = cardEl.querySelector('.p-main-service').parentNode;
+    mainServiceSelect.parentNode.insertBefore(noticeDiv, mainServiceSelect);
+}
+
+// 輔助函數：清空特定毛孩卡片的所有輸入框與獨立額度框（徹底解決亂入別隻狗的問題）
+function clearPetCardInputs(cardId) {
+    const cardEl = document.getElementById(`petCardRoot_${cardId}`);
+    if(!cardEl) return;
+    cardEl.querySelector('.p-name').value = '';
+    cardEl.querySelector('.p-breed').value = '';
+    cardEl.querySelector('.p-size').value = '';
+    cardEl.querySelector('.p-pers').value = '';
+    cardEl.querySelector('.p-heal').value = '';
+    let oldNotice = cardEl.querySelector('.card-luxury-notice');
+    if(oldNotice) oldNotice.remove();
+    recalculatePrice();
 }
 
         function appendNewPetFormCard() {
-            petCount++; const id = petCount; const wrapper = document.getElementById('dynamicPetContainer'); if(!wrapper) return;
-            const card = document.createElement('div'); card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 relative shadow-sm animate-fade-in"; card.id = `petCardRoot_${id}`;
-
-            let serviceOptions = `<option value="" disabled selected>請選擇服務項目</option>`; let categorySet = new Set();
-            allServices.forEach(s => { if(s.category && !s.category.includes('加購')) categorySet.add(s.category); });
-            Array.from(categorySet).forEach(cat => {
-                serviceOptions += `<optgroup label="【 ${cat} 】">`;
-                allServices.filter(s => s.category === cat).forEach(item => { serviceOptions += `<option value="${item.service}" data-price="${item.price}">${item.service} ($${item.price})</option>`; });
-                serviceOptions += `</optgroup>`;
-            });
-
-            let addonHtml = "";
-            allServices.filter(s => s.category && s.category.includes('加購')).forEach(add => {
-                addonHtml += `<label class="flex items-center gap-2 p-2 border border-gray-100 rounded-lg cursor-pointer bg-gray-50/50"><input type="checkbox" class="addon-checkbox" value="${add.service}" data-price="${add.price}"><span class="text-xs text-textBrown font-medium">${add.service} (+$${add.price})</span></label>`;
-            });
-            if(addonHtml === "") addonHtml = `<div class="col-span-2 text-xs text-gray-400 italic">暫無加購項目</div>`;
-
-            <!-- 置換前台網頁（分頁6）中的 appendNewPetFormCard() 內部 HTML 區塊 -->
-card.innerHTML = `
-<div class="flex justify-between items-center border-b pb-2"><span class="bg-avocado text-white font-bold text-[10px] px-3 py-1 rounded-lg">施作毛孩 NO. ${id}</span>${id > 1 ? `<button type="button" onclick="document.getElementById('petCardRoot_${id}').remove(); recalculatePrice();" class="text-[10px] font-bold text-rose-500">移除</button>` : ''}</div>
-<div class="grid grid-cols-2 gap-2">
-    <div><label class="text-[10px] text-gray-400 mb-1 block">毛孩姓名 *</label><input type="text" class="text-input p-name text-[12px]" oninput="checkFormReady()" placeholder="名字"></div>
-    <div><label class="text-[10px] text-gray-400 mb-1 block">品種 *</label><input type="text" class="text-input p-breed text-[12px]" placeholder="例如: 柴犬"></div>
-</div>
-<div class="grid grid-cols-1 gap-2">
-    <!-- 項目 1：體型分類灰字改成 體重（大約公斤數） -->
-    <div><label class="text-[10px] text-gray-400 mb-1 block">體型分類 *</label><input type="text" class="text-input p-size text-[12px]" placeholder="體重（大約公斤數）"></div>
-    <!-- 項目 2：已刪除原有的毛質分類框框 -->
-</div>
-<div class="grid grid-cols-2 gap-2">
-    <div><label class="text-[10px] text-gray-400 mb-1 block">個性標籤</label><input type="text" class="text-input p-pers text-[12px]" placeholder="如: 怕剪指甲"></div>
-    <div><label class="text-[10px] text-gray-400 mb-1 block">健康標籤</label><input type="text" class="text-input p-heal text-[12px]" placeholder="如: 無心臟病"></div>
-</div>
-<div><label class="text-[11px] font-bold text-textBrown mb-1 block">主服務項目 *</label><select class="text-input p-main-service text-gray-600 font-bold" onchange="recalculatePrice()" required>${serviceOptions}</select></div>
-<div><label class="text-[11px] font-bold text-textBrown mb-1.5 block">專屬加購護理 (可複選)</label><div class="grid grid-cols-2 gap-2">${addonHtml}</div></div>
-<div class="border border-gray-100 rounded-xl p-3 bg-gray-50/40 space-y-2"><label class="text-[10px] font-bold text-gray-400 block"><i class="fas fa-camera"></i> 上傳寵物真實相片 (選填)</label><input type="file" accept="image/*" onchange="previewAndPackIndividualPetImage(this, ${id})" class="text-xs text-gray-500 cursor-pointer"><div id="photoPreviewContainer_${id}" class="hidden w-16 h-16 rounded-lg overflow-hidden border bg-white shadow-inner"><img id="photoPreviewImg_${id}" class="w-full h-full object-cover"></div></div>`;
-
-            wrapper.appendChild(card); card.querySelectorAll('.addon-checkbox').forEach(cb => { cb.addEventListener('change', recalculatePrice); }); checkFormReady();
-        }
+    petCount++; const id = petCount; const wrapper = document.getElementById('dynamicPetContainer'); if(!wrapper) return;
+    const card = document.createElement('div'); card.className = "bg-white border border-[#E8DFD5] rounded-2xl p-5 space-y-4 relative shadow-sm animate-fade-in"; card.id = `petCardRoot_${id}`;
+    let serviceOptions = `<option value="" disabled selected>請選擇服務項目</option>`; let categorySet = new Set();
+    allServices.forEach(s => { if(s.category && !s.category.includes('加購')) categorySet.add(s.category); });
+    Array.from(categorySet).forEach(cat => {
+        serviceOptions += `<optgroup label="【 ${cat} 】">`;
+        allServices.filter(s => s.category === cat).forEach(item => { serviceOptions += `<option value="${item.service}" data-price="${item.price}">${item.service} ($${item.price})</option>`; });
+        serviceOptions += `</optgroup>`;
+    });
+    let addonHtml = "";
+    allServices.filter(s => s.category && s.category.includes('加購')).forEach(add => {
+        addonHtml += `<label class="flex items-center gap-2 p-2 border border-gray-100 rounded-lg cursor-pointer bg-gray-50/50"><input type="checkbox" class="addon-checkbox" value="${add.service}" data-price="${add.price}"><span class="text-xs text-textBrown font-medium">${add.service} (+$${add.price})</span></label>`;
+    });
+    if(addonHtml === "") addonHtml = `<div class="col-span-2 text-xs text-gray-400 italic">暫無加購項目</div>`;
+    
+    card.innerHTML = `
+    <div class="flex justify-between items-center border-b pb-2"><span class="bg-avocado text-white font-bold text-[10px] px-3 py-1 rounded-lg">施作毛孩 NO. ${id}</span>${id > 1 ? `<button type="button" onclick="document.getElementById('petCardRoot_${id}').remove(); recalculatePrice();" class="text-[10px] font-bold text-rose-500">移除</button>` : ''}</div>
+    <div class="grid grid-cols-2 gap-2">
+        <div><label class="text-[10px] text-gray-400 mb-1 block">毛孩姓名 *</label><input type="text" class="text-input p-name text-[12px]" oninput="checkFormReady()" placeholder="名字"></div>
+        <div><label class="text-[10px] text-gray-400 mb-1 block">品種 *</label><input type="text" class="text-input p-breed text-[12px]" placeholder="例如: 柴犬"></div>
+    </div>
+    <div class="grid grid-cols-1 gap-2">
+        <!-- 項目 3 改動：前台 體型分類 改體型(公斤) -->
+        <div><label class="text-[10px] text-gray-400 mb-1 block">體型(公斤) *</label><input type="text" class="text-input p-size text-[12px]" placeholder="請輸入大約公斤數 (如: 5kg)"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+        <div><label class="text-[10px] text-gray-400 mb-1 block">個性標籤</label><input type="text" class="text-input p-pers text-[12px]" placeholder="如: 怕剪指甲"></div>
+        <div><label class="text-[10px] text-gray-400 mb-1 block">健康標籤</label><input type="text" class="text-input p-heal text-[12px]" placeholder="如: 無心臟病"></div>
+    </div>
+    <div><label class="text-[11px] font-bold text-textBrown mb-1 block">主服務項目 *</label><select class="text-input p-main-service text-gray-600 font-bold" onchange="recalculatePrice()" required>${serviceOptions}</select></div>
+    <div><label class="text-[11px] font-bold text-textBrown mb-1.5 block">專屬加購護理 (可複選)</label><div class="grid grid-cols-2 gap-2">${addonHtml}</div></div>
+    <div class="border border-gray-100 rounded-xl p-3 bg-gray-50/40 space-y-2"><label class="text-[10px] font-bold text-gray-400 block"><i class="fas fa-camera"></i> 上傳寵物真實相片 (選填)</label><input type="file" accept="image/*" onchange="previewAndPackIndividualPetImage(this, ${id})" class="text-xs text-gray-500 cursor-pointer"><div id="photoPreviewContainer_${id}" class="hidden w-16 h-16 rounded-lg overflow-hidden border bg-white shadow-inner"><img id="photoPreviewImg_${id}" class="w-full h-full object-cover"></div></div>`;
+    
+    wrapper.appendChild(card); 
+    card.querySelectorAll('.addon-checkbox').forEach(cb => { cb.addEventListener('change', recalculatePrice); }); 
+    checkFormReady();
+}
 
         function previewAndPackIndividualPetImage(inputEl, id) {
             if (inputEl.files && inputEl.files[0]) {
@@ -765,9 +785,8 @@ function packDynamicPetsJsonPayload() {
         if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
     }
 
-    // 🚀 包裹資料：將 clientDetectedLineUID 透過 lineUID 欄位拋接給後端 submitBooking
     const formData = {
-        lineUID: clientDetectedLineUID, 
+        lineUID: clientDetectedLineUID, // 🚀 100% 背景 LIFF 拋接此 ID
         date: selectedDateStr,
         time: selectedTimeStr,
         phone: document.getElementById('phone').value.trim(),
@@ -786,9 +805,10 @@ function packDynamicPetsJsonPayload() {
 
     Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
-    let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
+    // 🚀 項目 4 修改：複製的訊息後面補充一段 >>回到預約頁網址
+    let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。\n>>回到預約頁https://sibyldesign.github.io/GuoguoPetGrooming/index.html`;
 
-    // 🚀 核心優化：網頁按下送出當下，不論客人最後有沒有複製訊息，第 1 秒直接背景 POST 強制將資料寫入試算表大盤與後台！
+    // 背景強制 POST 寫入大盤
     fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
@@ -802,7 +822,7 @@ function packDynamicPetsJsonPayload() {
             <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
             <p class="font-bold">接下來請配合簡單兩步驟：</p>
             <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
-            <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對喔！❤️</p>
+            <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 黏貼/貼上】</span>並送出，即可完成快速核對喔！❤️</p>
             </div>`,
             icon: 'success',
             confirmButtonColor: '#8A9A5B',
