@@ -4,7 +4,7 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-    <title>菓菓寵物預約系統｜IG 數位專區</title>
+    <title>菓菓寵物預約系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -265,14 +265,15 @@
             });
         }
 
-        // 🚀 IG專用環境免除 LIFF SDK 阻擋干擾
+        // 🚀 IG專用環境免除 LIFF SDK 阻擋干擾的乾淨初始化
+        let clientDetectedLineUID = ""; 
         function initPage() { 
           renderFrontCalendar(); 
           loadAnnouncement(); 
           loadCloudContracts(); 
           loadPortfolio(); 
           loadServices(); 
-          console.log("IG 獨立預約環境初始化完畢。");
+          console.log("IG 獨立渠道環境安全載入完畢。");
         }
                 
         function loadCloudContracts() { 
@@ -350,7 +351,7 @@
             if(isPortfolioExpanded) btn.innerHTML = `收合作品集 <i class="fas fa-chevron-up ml-1"></i>`; else btn.innerHTML = `查看更多作品集 <i class="fas fa-chevron-down ml-1"></i>`;
         }
 
-        // 🌟 全域清空函數
+        // 🌟 移至外部全域：清空特定毛孩卡片的所有輸入框與獨立額度框（解決作用域卡死報錯問題）
         function clearPetCardInputs(cardId) {
             const cardEl = document.getElementById(`petCardRoot_${cardId}`);
             if(!cardEl) return;
@@ -488,6 +489,7 @@
           checkFormReady();
         }
         
+        // 🌟 修正：電話查表完成，提示框顯示「預設第一隻毛孩」的獨立額度
         function triggerHistorySearch() {
             const phone = document.getElementById('phone').value.trim(); 
             if(phone.length < 8) return;
@@ -513,6 +515,7 @@
                         dropdownHtml += `<option value="_CHOOSE_">＋ 填寫本次施作的新毛孩（清空重填）</option>`;
                         petDropdown.innerHTML = dropdownHtml; petBlock.classList.remove('hidden');
                         
+                        // 🌟 鋼鐵連動：第一秒將第一隻狗的專屬卡片額度渲染在 NO.1 卡片中展示
                         applyLuxuryNoticeToCard(1, cachedCustomerPetsData[0]);
                     } else if(petBlock) { petBlock.classList.add('hidden'); }
                     
@@ -521,17 +524,19 @@
                     Swal.fire({toast:true, position:'top', icon:'info', title: '新客戶歡迎您', timer:1500, showConfirmButton:false}); 
                     if(document.getElementById('multiPetSelectBlock')) document.getElementById('multiPetSelectBlock').classList.add('hidden'); 
                     cachedCustomerPetsData = []; 
-                    clearPetCardInputs(1);
+                    clearPetCardInputs(1); // 🌟 防呆：查無此人時，全自動徹底清空，絕不帶入殘留舊狗資料
                 }
                 checkFormReady();
             }).catch(err => { Swal.close(); console.error(err); });
         }
 
+        // 🌟 修正：當主人點選不同毛孩時，各卡片區塊獨立動態更新為「該隻毛孩專屬」的口腔會員與卡餘額次數
         function switchSelectedPetInfo(indexVal) {
             const card1 = document.getElementById('petCardRoot_1');
             if(!card1) return;
             
             if(indexVal === "" || indexVal === "_CHOOSE_") {
+                // 🚀 防呆核心：家長選擇填寫新毛孩，立刻把輸入框與額度框全部清空，絕不殘留上一隻狗的資料！
                 clearPetCardInputs(1);
                 Swal.fire({toast:true, position:'top', icon:'info', title: '已清空表單，請輸入新毛孩資料', timer:1500, showConfirmButton:false});
                 return;
@@ -546,12 +551,14 @@
             card1.querySelector('.p-pers').value = petSelected.personalityTag || ''; 
             card1.querySelector('.p-heal').value = petSelected.healthTag || ''; 
             
+            // 🚀 連動刷新該隻毛孩獨立區塊專屬的奢華額度提示框
             applyLuxuryNoticeToCard(1, petSelected);
             
-            Swal.fire({toast:true, position:'top', icon:'success', title: `已帶入歷史毛孩 ${petSelected.name} 的專屬額度`, timer:1500, showConfirmButton:false}); 
+            Swal.fire({toast:true, position:'top', icon:'success', title: `已成功切換 ${petSelected.name} 的專屬卡片額度！`, timer:1500, showConfirmButton:false}); 
             recalculatePrice(); 
         }
 
+        // 輔助函數：在指定的毛孩卡片內渲染專屬的奢華額度提示框，實現同主人、不同毛孩的正確額度對接
         function applyLuxuryNoticeToCard(cardId, petData) {
             const cardEl = document.getElementById(`petCardRoot_${cardId}`);
             if(!cardEl) return;
@@ -565,6 +572,7 @@
             noticeDiv.className = 'card-luxury-notice my-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-black text-amber-800 animate-fade-in';
             noticeDiv.innerHTML = `👑 顯示口腔有效會員： ${petData.memberExpiry || '無'} | 寄卡餘額： ${petData.cardRemain || 0} 次`;
             
+            // 塞在主服務下拉選單的前方
             const mainServiceSelect = cardEl.querySelector('.p-main-service').parentNode;
             mainServiceSelect.parentNode.insertBefore(noticeDiv, mainServiceSelect);
         }
@@ -595,7 +603,7 @@
                 <div><label class="text-[10px\] text-gray-400 mb-1 block">體型(公斤) *</label><input type="text" class="text-input p-size text-[12px\]" placeholder="請輸入大約公斤數 (如: 5kg)"></div>
             </div>
             <div class="grid grid-cols-2 gap-2">
-                <div><label class="text-[10px\] text-gray-400 mb-1 block">個性標籤</label><input type="text" class="text-input p-size text-[12px\]" placeholder="如: 怕剪指甲"></div>
+                <div><label class="text-[10px\] text-gray-400 mb-1 block">個性標籤</label><input type="text" class="text-input p-pers text-[12px\]" placeholder="如: 怕剪指甲"></div>
                 <div><label class="text-[10px\] text-gray-400 mb-1 block">健康標籤</label><input type="text" class="text-input p-heal text-[12px\]" placeholder="如: 無心臟病"></div>
             </div>
             <div><label class="text-[11px\] font-bold text-textBrown mb-1 block">主服務項目 *</label><select class="text-input p-main-service text-gray-600 font-bold" onchange="recalculatePrice()" required>${serviceOptions}</select></div>
@@ -749,7 +757,6 @@
                 if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
             }
 
-            // 🚀 IG 外部連結進入時，預設拋空字串 UID。交由 Code.gs 後端自動翻閱對照表反查綁定！
             const formData = {
                 lineUID: "", 
                 date: selectedDateStr,
@@ -785,7 +792,7 @@
                     <p class="font-black text-avocado text-center text-[13px\] mb-1">✓ 系統已為您成功留位 🐾</p>
                     <p class="font-bold">接下來請配合簡單兩步驟：</p>
                     <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
-                    <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 黏貼/貼上】</span>並送出，即可完成快速核對與後台UID綁定喔！❤️</p>
+                    <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對與後台UID綁定喔！❤️</p>
                     </div>`,
                     icon: 'success',
                     confirmButtonColor: '#8A9A5B',
@@ -803,22 +810,22 @@
                 });
             }).catch(err => {
                 Swal.close();
-                Swal.fire('雲端寫入超時', '資料已在排隊歸檔，請安心通知家長或重試。', 'error');
+                Swal.fire('雲端寫入超時', '資料已在排隊歸檔，請安心通知家長或重試', 'error');
             });
         }
     </script>
 
     <div class="max-w-md mx-auto px-4 pb-4 mt-12">
-        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%\] mx-auto scale-95">
-            <h4 class="text-[12px\] font-black text-[#5C4D43\] mb-0.5">
-                <i class="fa-solid fa-file-signature text-avocado/80"></i> 現場臨櫃家長專專區
+        <div class="bg-amber-50/40 border border-dashed border-amber-200/80 rounded-2xl p-4 text-center shadow-sm max-w-[90%] mx-auto scale-95">
+            <h4 class="text-[12px] font-black text-[#5C4D43] mb-0.5">
+                <i class="fa-solid fa-file-signature text-[#8A9A5B]"></i> 現場臨櫃家長專區
             </h4>
-            <p class="text-[10px\] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
+            <p class="text-[10px] text-gray-400 mb-2">代客建檔之家長由此進入完成數位簽署</p>
 
             <a href="https://script.google.com/macros/s/AKfycbwop3sgw8EAe5lulmRyeTZ45TkAVm5BFeLa5J-5U9DGTwGHjLgccOtTjNrc48E6bdWc/exec?page=signature"
-            target="_blank"
-            class="w-full bg-[#8A9A5B\]/90 text-white py-2 rounded-xl text-[11px\] font-bold tracking-widest shadow-sm active:scale-95 transition block text-center">
-            ⚡ 點此補簽數位合約
+               target="_blank"
+               class="w-full bg-[#8A9A5B] text-white py-2.5 rounded-xl text-[12px] font-black tracking-widest shadow-sm active:scale-95 hover:bg-[#7c8b52] transition block text-center select-none cursor-pointer">
+               ⚡ 點此補簽數位合約
             </a>
         </div>
     </div>
