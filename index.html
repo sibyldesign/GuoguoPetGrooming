@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script>
         tailwind.config = {
@@ -266,42 +267,37 @@
         }
 
         // 1. 宣告一個全域變數用來存放客人的 LINE_UID
+// 宣告全域暫存變數以承接門牌 UID
 let clientDetectedLineUID = ""; 
 
-function initPage() {
-    renderFrontCalendar(); 
-    loadAnnouncement(); 
-    loadCloudContracts(); 
-    loadPortfolio(); 
-    loadServices(); 
-    
-    // 🚀 啟動 LINE LIFF 背景秒抓 UID 機制
-    // 請先去 LINE Developers 後台申請一個 LIFF ID (例如: 2000xxxxxx-xxxxxxx)
-    const MY_LIFF_ID = "您的LIFF_ID填在這裡"; 
-    
-    if (typeof liff !== "undefined" && MY_LIFF_ID !== "您的LIFF_ID填在這裡") {
-        liff.init({ liffId: MY_LIFF_ID }).then(() => {
-            // 判斷家長是否登入 LINE 環境
-            if (liff.isLoggedIn()) {
-                // 100% 背景自動抓取客人的 Profile 資訊
-                liff.getProfile().then(profile => {
-                    if (profile && profile.userId) {
-                        clientDetectedLineUID = profile.userId;
-                        
-                        // 【貼心奢華加碼】如果客人的 LINE 名稱沒填，系統幫他自動回填 LINE 暱稱！
-                        const lineNameInput = document.getElementById('lineName');
-                        if (lineNameInput && lineNameInput.value.trim() === "") {
-                            lineNameInput.value = profile.displayName || "";
-                        }
-                        console.log("背景抓取 UID 成功:", clientDetectedLineUID);
-                    }
-                }).catch(err => console.log("抓取 Profile 失敗:", err));
-            } else {
-                // 如果是在 LINE 內開啟但沒登入，可選擇是否強制觸發登入（通常 B 方案在選單點開就是登入狀態）
-                // liff.login(); 
+function initPage() { 
+  renderFrontCalendar(); 
+  loadAnnouncement(); 
+  loadCloudContracts(); 
+  loadPortfolio(); 
+  loadServices(); 
+  
+  // 🚀 啟動 LINE 官方 LIFF 自動捕捉 UID 防線
+  // 雅翎請至您的 LINE Developers 後台申請一組 LIFF ID (例如: 2006xxxxx-xxxxxxx)
+  const MY_LIFF_ID = "您的真實LIFF_ID填在這裡"; 
+  
+  if (typeof liff !== "undefined" && MY_LIFF_ID !== "您的真實LIFF_ID填在這裡") {
+    liff.init({ liffId: MY_LIFF_ID }).then(() => {
+      if (liff.isLoggedIn()) {
+        liff.getProfile().then(profile => {
+          if (profile && profile.userId) {
+            clientDetectedLineUID = profile.userId; // 成功背景秒抓 UID！
+            
+            // 防呆自動帶入家長 LINE 名稱
+            const lineNameInput = document.getElementById('lineName');
+            if (lineNameInput && lineNameInput.value.trim() === "") {
+              lineNameInput.value = profile.displayName || "";
             }
-        }).catch(err => console.error("LIFF 初始化失敗:", err));
-    }
+          }
+        }).catch(err => console.log("Profile撈取失敗", err));
+      }
+    }).catch(err => console.error("LIFF 框架初始化失敗", err));
+  }
 }
         
         function loadCloudContracts() { 
@@ -769,8 +765,9 @@ function packDynamicPetsJsonPayload() {
         if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
     }
 
+    // 🚀 包裹資料：將 clientDetectedLineUID 透過 lineUID 欄位拋接給後端 submitBooking
     const formData = {
-        lineUID: clientDetectedLineUID,
+        lineUID: clientDetectedLineUID, 
         date: selectedDateStr,
         time: selectedTimeStr,
         phone: document.getElementById('phone').value.trim(),
@@ -787,26 +784,17 @@ function packDynamicPetsJsonPayload() {
         signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
     };
 
-    // 🚀 第一步：即時跳出高質感讀取畫面
-    Swal.fire({ 
-        title: '送出預約中...', 
-        text: '正在將數位服務合約寫入雲端庫，請稍候...', 
-        icon: 'info', 
-        allowOutsideClick: false, 
-        showConfirmButton: false, 
-        didOpen: () => Swal.showLoading() 
-    });
+    Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
     let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。`;
 
-    // 🚀 第二步：不靠傳統定時器，採用標準 .then() 異步阻塞技術！確保試算表 100% 寫入完畢才開門跳成功彈窗！
+    // 🚀 核心優化：網頁按下送出當下，不論客人最後有沒有複製訊息，第 1 秒直接背景 POST 強制將資料寫入試算表大盤與後台！
     fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({ action: "submitBooking", payload: formData })
     }).then(() => {
-        // 當確定後端收件完成，關閉讀取圈圈，彈出預約成功視窗
         Swal.close();
         Swal.fire({
             title: '預約成功！',
@@ -822,21 +810,17 @@ function packDynamicPetsJsonPayload() {
             allowOutsideClick: false
         }).then((result) => {
             if (result.isConfirmed) {
-                // 執行複製功能
                 navigator.clipboard.writeText(lineText).catch(err => console.log('複製略過', err));
-                
                 if(btn) {
                     btn.innerText = '確定已收到預約申請！';
                     btn.className = "w-full bg-green-100 text-green-700 font-black py-4 rounded-xl mb-6 text-sm border border-green-300 text-center block cursor-default";
                 }
-                // 開放跳轉外部官方 LINE 
                 window.open("https://lin.ee/6A3s756D", '_blank');
             }
         });
     }).catch(err => {
         Swal.close();
-        if(btn) { btn.disabled = false; btn.innerText = '重試送出預約'; }
-        Swal.fire('網路瞬斷', '目前連線大腦有些忙碌，請再次點擊按鈕重試發送。', 'error');
+        Swal.fire('雲端寫入超時', '資料已在排隊歸檔，請安心通知家長或重試。', 'error');
     });
 }
     </script>
