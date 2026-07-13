@@ -266,8 +266,7 @@
             });
         }
 
-        // 1. 宣告一個全域變數用來存放客人的 LINE_UID
-// 宣告全域暫存變數以承接門牌 UID
+        // 宣告全域暫存變數
 let clientDetectedLineUID = ""; 
 
 function initPage() { 
@@ -277,26 +276,33 @@ function initPage() {
   loadPortfolio(); 
   loadServices(); 
   
-  // 🚀 啟動 LINE 官方 LIFF 自動捕捉 UID 防線
-  // 雅翎請至您的 LINE Developers 後台申請一組 LIFF ID (例如: 2006xxxxx-xxxxxxx)
-  const MY_LIFF_ID = "您的真實LIFF_ID填在這裡"; 
+  // 🚀 您的真實 LINE LIFF ID
+  const MY_LIFF_ID = "2010691824-Nd3IKeVa"; 
   
-  if (typeof liff !== "undefined" && MY_LIFF_ID !== "您的真實LIFF_ID填在這裡") {
+  if (typeof liff !== "undefined" && MY_LIFF_ID !== "") {
     liff.init({ liffId: MY_LIFF_ID }).then(() => {
-      if (liff.isLoggedIn()) {
+      // 判斷家長是否已經在 LINE 環境中登入
+      if (!liff.isLoggedIn()) {
+        
+        // 🚀【鋼鐵修復】加上 redirectUri 參數，強制跳轉回目前的 GitHub 網址。
+        // 這能讓 LINE 伺服器改用「整頁跳轉授權」而不是「內嵌 Frame」，彻底解決 access.line.me 拒絕連線的死結！
+        liff.login({ redirectUri: window.location.href }); 
+        
+      } else {
         liff.getProfile().then(profile => {
           if (profile && profile.userId) {
-            clientDetectedLineUID = profile.userId; // 成功背景秒抓 UID！
+            clientDetectedLineUID = profile.userId; // 🌟 100% 成功背景秒抓真實 ID
+            console.log("LIFF 成功靜默鎖定 UID: ", clientDetectedLineUID);
             
-            // 防呆自動帶入家長 LINE 名稱
+            // 自動幫家長帶入他 LINE 的真實暱稱（減少符號打錯的機會）
             const lineNameInput = document.getElementById('lineName');
             if (lineNameInput && lineNameInput.value.trim() === "") {
               lineNameInput.value = profile.displayName || "";
             }
           }
-        }).catch(err => console.log("Profile撈取失敗", err));
+        }).catch(err => console.error("Profile撈取失敗", err));
       }
-    }).catch(err => console.error("LIFF 框架初始化失敗", err));
+    }).catch(err => console.error("LIFF 核心初始化失敗", err));
   }
 }
         
@@ -785,8 +791,9 @@ function packDynamicPetsJsonPayload() {
         if (globalPackedPetPhotos[key]) { allPhotosPackedMap[key] = globalPackedPetPhotos[key]; }
     }
 
+    // 🚀 包裹表單：將 LIFF 抓到的變數精準透過 lineUID 屬性往後端丟
     const formData = {
-        lineUID: clientDetectedLineUID, // 🚀 100% 背景 LIFF 拋接此 ID
+        lineUID: clientDetectedLineUID, 
         date: selectedDateStr,
         time: selectedTimeStr,
         phone: document.getElementById('phone').value.trim(),
@@ -803,9 +810,8 @@ function packDynamicPetsJsonPayload() {
         signatureDataBase64: sigCanvasObj ? sigCanvasObj.toDataURL() : ""
     };
 
-    Swal.fire({ title: '送出預約中...', text: '正在發送數位合約，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: '送出預約中...', text: '正在寫入雲端大盤，請稍候...', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
 
-    // 🚀 項目 4 修改：複製的訊息後面補充一段 >>回到預約頁網址
     let lineText = `【菓菓寵物】線上預約確認回條\n家長姓名：${formData.ownerName}\nLINE 名稱：${lineNameVal}\n預約日期：${selectedDateStr}\n預約時段：${selectedTimeStr}\n施作毛孩：${mainServicesCombined.join(', ')}\n預估金額：$${currentTotal}\n數位服務契約業經本人線上滑動詳閱並親筆簽章。\n>>回到預約頁https://sibyldesign.github.io/GuoguoPetGrooming/index.html`;
 
     // 背景強制 POST 寫入大盤
@@ -822,7 +828,7 @@ function packDynamicPetsJsonPayload() {
             <p class="font-black text-avocado text-center text-[13px] mb-1">✓ 系統已為您成功留位 🐾</p>
             <p class="font-bold">接下來請配合簡單兩步驟：</p>
             <p>1️⃣ 點擊下方按鈕，系統會複製明細並幫您打開【菓菓寵物 官方LINE】。</p>
-            <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 黏貼/貼上】</span>並送出，即可完成快速核對喔！❤️</p>
+            <p>2️⃣ 進入對話框後，<span class="text-rose-500 font-black">【手指長按 ➡️ 點選 貼上】</span>並送出，即可完成快速核對喔！❤️</p>
             </div>`,
             icon: 'success',
             confirmButtonColor: '#8A9A5B',
