@@ -266,9 +266,10 @@
             });
         }
 
-        // 宣告全域暫存變數
+// 宣告全域暫存變數
 let clientDetectedLineUID = ""; 
 
+// 🌟 修改後：強制啟動 LINE LIFF 授權與防呆防沙盒環境
 function initPage() { 
   renderFrontCalendar(); 
   loadAnnouncement(); 
@@ -281,30 +282,49 @@ function initPage() {
   
   if (typeof liff !== "undefined" && MY_LIFF_ID !== "") {
     liff.init({ liffId: MY_LIFF_ID }).then(() => {
-      // 判斷家長是否已經在 LINE 環境中登入
-      if (!liff.isLoggedIn()) {
-        
-        // 🚀【鋼鐵修復】加上 redirectUri 參數，強制跳轉回目前的 GitHub 網址。
-        // 這能讓 LINE 伺服器改用「整頁跳轉授權」而不是「內嵌 Frame」，彻底解決 access.line.me 拒絕連線的死結！
-        liff.login({ redirectUri: window.location.href }); 
-        
-      } else {
-        liff.getProfile().then(profile => {
-          if (profile && profile.userId) {
-            clientDetectedLineUID = profile.userId; // 🌟 100% 成功背景秒抓真實 ID
-            console.log("LIFF 成功靜默鎖定 UID: ", clientDetectedLineUID);
-            
-            // 自動幫家長帶入他 LINE 的真實暱稱（減少符號打錯的機會）
-            const lineNameInput = document.getElementById('lineName');
-            if (lineNameInput && lineNameInput.value.trim() === "") {
-              lineNameInput.value = profile.displayName || "";
+      
+      // 🎯 防線一：精準判定家長/老闆是否在 LINE 原生 App 軟體環境內開啟
+      if (liff.isInClient()) {
+        if (!liff.isLoggedIn()) {
+          // 🚀【強制授權】加上 redirectUri 參數，強迫以整頁重導向方式完成登入授權，徹底解決「無法正常執行」的網域阻擋！
+          liff.login({ redirectUri: window.location.href }); 
+        } else {
+          liff.getProfile().then(profile => {
+            if (profile && profile.userId) {
+              clientDetectedLineUID = profile.userId; // 🌟 100% 成功背景秒抓真實 ID
+              console.log("LIFF 成功靜默鎖定 UID: ", clientDetectedLineUID);
+              
+              // 自動幫家長/老闆帶入他 LINE 的真實暱稱
+              const lineNameInput = document.getElementById('lineName');
+              if (lineNameInput && lineNameInput.value.trim() === "") {
+                lineNameInput.value = profile.displayName || "";
+              }
             }
-          }
-        }).catch(err => console.error("Profile撈取失敗", err));
+          }).catch(err => console.error("Profile撈取失敗", err));
+        }
+      } else {
+        // 🎯 防線二：非 LINE App 環境（例如一般 Safari、Chrome 或 IG 點開），改採外部跳轉登入
+        if (!liff.isLoggedIn()) {
+          // 在外部環境也強迫透過獨立頁面跳轉完成 LINE Login
+          liff.login({ redirectUri: window.location.href });
+        } else {
+          liff.getProfile().then(profile => {
+            if (profile && profile.userId) {
+              clientDetectedLineUID = profile.userId;
+              console.log("外部瀏覽器連動 LINE Login 成功，抓取 UID: ", clientDetectedLineUID);
+              const lineNameInput = document.getElementById('lineName');
+              if (lineNameInput && lineNameInput.value.trim() === "") {
+                lineNameInput.value = profile.displayName || "";
+              }
+            }
+          }).catch(err => console.error("外部 Profile 撈取失敗", err));
+        }
       }
+      
     }).catch(err => console.error("LIFF 核心初始化失敗", err));
   }
 }
+
         
         function loadCloudContracts() { 
             callGasGet('getSystemContractSettings').then(res => { 
@@ -872,4 +892,5 @@ function packDynamicPetsJsonPayload() {
 
 </body>
 </html>
+
 
